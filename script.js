@@ -340,25 +340,32 @@ function parseInvoiceText(text) {
         .filter(l => l && !ignoreRe.test(l));
     lines.forEach(line => {
         if (!/\d/.test(line)) return;
-        let name = '', amount = 0;
-        let match = line.match(/^([A-Z0-9-]+)[\s,]+(.+?)[\s,]+(\d+)(?:\s|$)/i);
+        let name = '', amountStr = '';
+        let match = line.match(/^([A-Z0-9-]+)[\s,]+(.+?)[\s,]+([0-9]+(?:[.,][0-9]+)?[^\s]*)/i);
         if (match) {
             name = match[2];
-            amount = parseInt(match[3], 10) || 0;
+            amountStr = match[3];
         } else {
-            match = line.match(/^(.+?)[\s,]+([A-Z0-9-]+)[\s,]+(\d+)(?:\s|$)/i);
+            match = line.match(/^(.+?)[\s,]+([A-Z0-9-]+)[\s,]+([0-9]+(?:[.,][0-9]+)?[^\s]*)/i);
             if (match) {
                 name = match[1];
-                amount = parseInt(match[3], 10) || 0;
+                amountStr = match[3];
             } else {
-                match = line.match(/^(.+?)[\s,]+(\d+)(?:\s|$)/);
+                match = line.match(/^(.+?)[\s,]+([0-9]+(?:[.,][0-9]+)?[^\s]*)/);
                 if (match) {
                     name = match[1];
-                    amount = parseInt(match[2], 10) || 0;
+                    amountStr = match[2];
                 } else {
                     return; // unable to parse this line
                 }
             }
+        }
+        let amount = 0;
+        if (/^\d+\s*\/\s*\d+$/.test(amountStr)) {
+            const [n,d] = amountStr.split('/').map(n => parseFloat(n));
+            amount = d ? n/d : n;
+        } else {
+            amount = parseFloat(amountStr.replace(/[^0-9.]/g, '')) || 0;
         }
         if (!name) return;
         const barcode = `${inventoryType}-${nextId++}`;
