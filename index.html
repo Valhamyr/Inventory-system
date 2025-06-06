@@ -22,6 +22,19 @@
         <ul id="types"></ul>
     </section>
 
+    <section id="generate-barcode">
+        <h2>Generate Item Barcode</h2>
+        <form id="generateForm">
+            <label>Type:
+                <select id="genType"></select>
+            </label>
+            <label>Name: <input type="text" id="genName" required></label>
+            <button type="submit">Generate Barcode</button>
+        </form>
+        <svg id="generatedBarcode" class="barcode"></svg>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script src="home.js"></script>
 </body>
 </html>
