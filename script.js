@@ -13,6 +13,8 @@ const DEFAULT_FIELDS = [
     {key: 'notes', label: 'Notes', multiLine: true}
 ];
 
+let selectedBarcode = null;
+
 function loadFields() {
     const data = localStorage.getItem(FIELD_KEY);
     if (data) return JSON.parse(data);
@@ -74,6 +76,38 @@ function saveItems(items) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
 }
 
+function showItemDetails(item) {
+    const container = document.getElementById('detailsContent');
+    if (!container) return;
+    if (!item) {
+        container.textContent = 'Item not found';
+        return;
+    }
+    container.innerHTML = '';
+    const fields = loadFields();
+    const ul = document.createElement('ul');
+    fields.forEach(f => {
+        const li = document.createElement('li');
+        li.textContent = `${f.label}: ${item[f.key] || ''}`;
+        ul.appendChild(li);
+    });
+    container.appendChild(ul);
+}
+
+function selectItemByBarcode(barcode) {
+    selectedBarcode = barcode;
+    document.querySelectorAll('#inventoryTable tbody tr').forEach(tr => {
+        if (tr.dataset.barcode === barcode) {
+            tr.classList.add('selected');
+        } else {
+            tr.classList.remove('selected');
+        }
+    });
+    const item = loadItems().find(i => i.barcode === barcode);
+    if (item) showItemDetails(item);
+    else showItemDetails(null);
+}
+
 function renderFormFields() {
     const fields = loadFields();
     const container = document.getElementById('formFields');
@@ -120,6 +154,10 @@ function renderItems() {
     tbody.innerHTML = '';
     items.forEach(item => {
         const tr = document.createElement('tr');
+        tr.dataset.barcode = item.barcode;
+        if (selectedBarcode === item.barcode) {
+            tr.classList.add('selected');
+        }
         fields.forEach(f => {
             const td = document.createElement('td');
             if (f.key === 'barcode') {
@@ -141,6 +179,9 @@ function renderItems() {
         const code = svg.dataset.code;
         if (code) JsBarcode(svg, code, {displayValue: true});
     });
+    if (selectedBarcode) {
+        selectItemByBarcode(selectedBarcode);
+    }
 }
 
 function addOrUpdateItem(e) {
@@ -188,6 +229,11 @@ function handleTableClick(e) {
         let items = loadItems().filter(i => i.barcode !== delBarcode);
         saveItems(items);
         renderItems();
+    } else {
+        const row = e.target.closest('tr');
+        if (row && row.dataset.barcode) {
+            selectItemByBarcode(row.dataset.barcode);
+        }
     }
 }
 
@@ -205,9 +251,12 @@ function handleBarcodeInput(e) {
                     const input = document.getElementById(`field_${f.key}`);
                     if (input) input.value = item[f.key] || '';
                 });
+                selectItemByBarcode(code);
             } else {
                 document.getElementById('itemForm').reset();
                 if (barcodeInput) barcodeInput.value = code;
+                selectedBarcode = null;
+                showItemDetails(null);
             }
             e.target.value = '';
         }
@@ -223,4 +272,8 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('barcodeInput').addEventListener('keydown', handleBarcodeInput);
     const btn = document.getElementById('editFieldsBtn');
     if (btn) btn.addEventListener('click', editFields);
+    const initialBarcode = params.get('barcode');
+    if (initialBarcode) {
+        selectItemByBarcode(initialBarcode);
+    }
 });
