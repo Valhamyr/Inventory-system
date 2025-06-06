@@ -19,6 +19,8 @@ export async function extractTextFromPDF(pdfFile) {
   return text;
 }
 
+// Sends extracted invoice text to the local backend which in turn
+// uses the OpenAI API to parse the line items.
 export async function sendTextToAPI(text) {
   const response = await fetch('/api/parse-invoice', {
     method: 'POST',
