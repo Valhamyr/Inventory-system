@@ -17,6 +17,11 @@ function renderTypes() {
         link.href = `inventory.html?type=${encodeURIComponent(t)}`;
         link.textContent = t;
         li.appendChild(link);
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Delete';
+        delBtn.dataset.delete = t;
+        delBtn.style.marginLeft = '0.5rem';
+        li.appendChild(delBtn);
         ul.appendChild(li);
     });
     renderTypeOptions();
@@ -85,12 +90,32 @@ function handleGenerateBarcode(e) {
     JsBarcode(svg, barcode, {displayValue: true});
 }
 
+function deleteType(name) {
+    if (!confirm(`Delete type "${name}" and all its data?`)) return;
+    let types = loadTypes().filter(t => t !== name);
+    saveTypes(types);
+    localStorage.removeItem(`inventoryItems_${name}`);
+    localStorage.removeItem(`inventoryFields_${name}`);
+    renderTypes();
+}
+
+function handleTypeListClick(e) {
+    const name = e.target.dataset.delete;
+    if (name) {
+        deleteType(name);
+    }
+}
+
 window.addEventListener('DOMContentLoaded', () => {
     renderTypes();
     document.getElementById('typeForm').addEventListener('submit', addType);
     const genForm = document.getElementById('generateForm');
     if (genForm) {
         genForm.addEventListener('submit', handleGenerateBarcode);
+    }
+    const typeList = document.getElementById('types');
+    if (typeList) {
+        typeList.addEventListener('click', handleTypeListClick);
     }
     renderTypeOptions();
 });
