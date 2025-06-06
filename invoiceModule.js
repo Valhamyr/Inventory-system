@@ -12,19 +12,41 @@ export async function handleFileUpload(file) {
 // header names. Empty lines are ignored.
 export async function parseCSVFile(csvFile) {
   const text = await csvFile.text();
+  return parseCSVText(text);
+}
+
+export function parseCSVText(text) {
   const lines = text.split(/\r?\n/).filter(l => l.trim());
   if (lines.length < 2) return [];
-  const headers = lines[0].split(',').map(h => h.trim());
+
+  const rawHeaders = lines[0].split(',').map(h => h.trim());
+  const fields = typeof loadFields === 'function' ? loadFields() : [];
+  const map = {};
+  fields.forEach(f => {
+    map[normalize(f.label)] = f.key;
+    map[normalize(f.key)] = f.key;
+  });
+  const synonyms = { quantity: 'amount', qty: 'amount', code: 'barcode', price: 'price' };
+
+  const headers = rawHeaders.map(h => {
+    const norm = normalize(h);
+    return map[norm] || synonyms[norm] || norm;
+  });
+
   const items = [];
   for (let i = 1; i < lines.length; i++) {
     const cols = lines[i].split(',').map(c => c.trim());
     const item = {};
-    headers.forEach((h, idx) => {
-      item[h] = cols[idx] || '';
+    headers.forEach((key, idx) => {
+      item[key] = cols[idx] || '';
     });
     items.push(item);
   }
   return items;
+}
+
+function normalize(str) {
+  return String(str).toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 export function addItemsToInventory(items) {
@@ -35,7 +57,16 @@ export function addItemsToInventory(items) {
   } else if (Array.isArray(window.inventory)) {
     current = window.inventory;
   }
-  items.forEach(item => current.push(item));
+  const fields = typeof loadFields === 'function' ? loadFields() : [];
+  const barcodeField = fields.find(f => f.key === 'barcode');
+  items.forEach(item => {
+    if (barcodeField && !item[barcodeField.key]) {
+      if (typeof getNextBarcode === 'function') {
+        item[barcodeField.key] = getNextBarcode();
+      }
+    }
+    current.push(item);
+  });
   if (typeof saveItems === 'function') {
     saveItems(current);
     if (typeof renderItems === 'function') renderItems();
