@@ -58,8 +58,8 @@ function editFields() {
     renderEditFields();
     renderTableHeader();
     renderItems();
-    const current = loadItems().find(i => i.barcode === selectedBarcode);
-    showItemDetails(current || null);
+    const currentItem = loadItems().find(i => i.barcode === selectedBarcode);
+    showItemDetails(currentItem || null);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
