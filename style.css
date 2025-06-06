@@ -65,3 +65,12 @@ nav {
 #inventoryTable tr.selected {
     background-color: #ffffcc;
 }
+
+@media (min-width: 800px) {
+    #inventory,
+    #item-details {
+        display: inline-block;
+        width: 48%;
+        vertical-align: top;
+    }
+}

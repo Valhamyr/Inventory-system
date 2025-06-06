@@ -9,17 +9,26 @@
 <body>
     <h1>Inventory Types</h1>
 
+    <section id="search-item">
+        <h2>Search Item</h2>
+        <form id="searchForm">
+            <input type="text" id="searchInput" placeholder="Enter barcode" required>
+            <button type="submit">Search</button>
+        </form>
+        <p id="searchMessage"></p>
+    </section>
+
+    <section id="type-list">
+        <h2>Existing Types</h2>
+        <ul id="types"></ul>
+    </section>
+
     <section id="add-type">
         <h2>Add New Type</h2>
         <form id="typeForm">
             <label>Name: <input type="text" id="typeName" required></label>
             <button type="submit">Add Type</button>
         </form>
-    </section>
-
-    <section id="type-list">
-        <h2>Existing Types</h2>
-        <ul id="types"></ul>
     </section>
 
     <section id="generate-barcode">
@@ -32,15 +41,6 @@
             <button type="submit">Generate Barcode</button>
         </form>
         <svg id="generatedBarcode" class="barcode"></svg>
-    </section>
-
-    <section id="search-item">
-        <h2>Search Item</h2>
-        <form id="searchForm">
-            <input type="text" id="searchInput" placeholder="Enter barcode" required>
-            <button type="submit">Search</button>
-        </form>
-        <p id="searchMessage"></p>
     </section>
 
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
