@@ -9,17 +9,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-function loadItems() {
+async function loadItems() {
+    if (githubEnabled()) {
+        const file = `data/items_${encodeURIComponent(inventoryType)}.json`;
+        const data = await loadGitHubJson(file);
+        return data || [];
+    }
     const data = localStorage.getItem(STORAGE_KEY);
     return data ? JSON.parse(data) : [];
 }
 
-function saveItems(items) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+async function saveItems(items) {
+    if (githubEnabled()) {
+        const file = `data/items_${encodeURIComponent(inventoryType)}.json`;
+        await saveGitHubJson(file, items, `Update items for ${inventoryType}`);
+    } else {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    }
 }
 
-function renderItems() {
-    const items = loadItems();
+async function renderItems() {
+    const items = await loadItems();
     const tbody = document.querySelector('#inventoryTable tbody');
     tbody.innerHTML = '';
     items.forEach(item => {
@@ -40,14 +50,14 @@ function renderItems() {
     });
 }
 
-function addOrUpdateItem(e) {
+async function addOrUpdateItem(e) {
     e.preventDefault();
     const name = document.getElementById('itemName').value.trim();
     const quantity = parseInt(document.getElementById('itemQty').value, 10) || 0;
     const barcode = document.getElementById('itemBarcode').value.trim();
     const notes = document.getElementById('itemNotes').value.trim();
     if (!barcode) return;
-    let items = loadItems();
+    let items = await loadItems();
     const existing = items.find(i => i.barcode === barcode);
     if (existing) {
         existing.name = name;
@@ -56,16 +66,16 @@ function addOrUpdateItem(e) {
     } else {
         items.push({name, quantity, barcode, notes});
     }
-    saveItems(items);
+    await saveItems(items);
     renderItems();
     e.target.reset();
 }
 
-function handleTableClick(e) {
+async function handleTableClick(e) {
     const editBarcode = e.target.dataset.edit;
     const delBarcode = e.target.dataset.delete;
     if (editBarcode) {
-        const item = loadItems().find(i => i.barcode === editBarcode);
+        const item = (await loadItems()).find(i => i.barcode === editBarcode);
         if (item) {
             document.getElementById('itemName').value = item.name;
             document.getElementById('itemQty').value = item.quantity;
@@ -73,19 +83,19 @@ function handleTableClick(e) {
             document.getElementById('itemNotes').value = item.notes;
         }
     } else if (delBarcode) {
-        let items = loadItems().filter(i => i.barcode !== delBarcode);
-        saveItems(items);
+        let items = (await loadItems()).filter(i => i.barcode !== delBarcode);
+        await saveItems(items);
         renderItems();
     }
 }
 
-function handleBarcodeInput(e) {
+async function handleBarcodeInput(e) {
     if (e.key === 'Enter') {
         e.preventDefault();
         const code = e.target.value.trim();
         if (code) {
             document.getElementById('itemBarcode').value = code;
-            const item = loadItems().find(i => i.barcode === code);
+            const item = (await loadItems()).find(i => i.barcode === code);
             if (item) {
                 document.getElementById('itemName').value = item.name;
                 document.getElementById('itemQty').value = item.quantity;
@@ -100,8 +110,10 @@ function handleBarcodeInput(e) {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-    renderItems();
-    document.getElementById('itemForm').addEventListener('submit', addOrUpdateItem);
-    document.querySelector('#inventoryTable tbody').addEventListener('click', handleTableClick);
-    document.getElementById('barcodeInput').addEventListener('keydown', handleBarcodeInput);
+    (async () => {
+        await renderItems();
+        document.getElementById('itemForm').addEventListener('submit', addOrUpdateItem);
+        document.querySelector('#inventoryTable tbody').addEventListener('click', handleTableClick);
+        document.getElementById('barcodeInput').addEventListener('keydown', handleBarcodeInput);
+    })();
 });
