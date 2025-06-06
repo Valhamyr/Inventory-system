@@ -1,10 +1,21 @@
+const params = new URLSearchParams(location.search);
+const inventoryType = params.get('type') || 'default';
+const STORAGE_KEY = `inventoryItems_${inventoryType}`;
+
+document.addEventListener('DOMContentLoaded', () => {
+    const title = document.getElementById('page-title');
+    if (title) {
+        title.textContent = `Inventory Tracker - ${inventoryType}`;
+    }
+});
+
 function loadItems() {
-    const data = localStorage.getItem('inventoryItems');
+    const data = localStorage.getItem(STORAGE_KEY);
     return data ? JSON.parse(data) : [];
 }
 
 function saveItems(items) {
-    localStorage.setItem('inventoryItems', JSON.stringify(items));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
 }
 
 function renderItems() {
@@ -24,7 +35,6 @@ function renderItems() {
             </td>`;
         tbody.appendChild(tr);
     });
-    // render barcodes
     document.querySelectorAll('svg.barcode').forEach(svg => {
         JsBarcode(svg, svg.dataset.code, {displayValue: true});
     });
