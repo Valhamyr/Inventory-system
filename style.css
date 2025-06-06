@@ -39,3 +39,15 @@ section {
         margin-right: 1rem;
     }
 }
+#types {
+    list-style: none;
+    padding: 0;
+}
+
+#types li {
+    margin: 0.5rem 0;
+}
+
+nav {
+    margin-bottom: 1rem;
+}

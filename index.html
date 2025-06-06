@@ -3,40 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventory Tracker</title>
+    <title>Inventory Types</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 </head>
 <body>
-    <h1>Inventory Tracker</h1>
+    <h1>Inventory Types</h1>
 
-    <section id="scanner">
-        <label for="barcodeInput">Scan Barcode:</label>
-        <input type="text" id="barcodeInput" placeholder="Scan barcode" autofocus>
-    </section>
-
-    <section id="item-form-section">
-        <h2>Add / Update Item</h2>
-        <form id="itemForm">
-            <label>Name: <input type="text" id="itemName" required></label>
-            <label>Quantity: <input type="number" id="itemQty" required min="0"></label>
-            <label>Barcode: <input type="text" id="itemBarcode" required></label>
-            <label>Notes: <input type="text" id="itemNotes"></label>
-            <button type="submit">Add / Update</button>
+    <section id="add-type">
+        <h2>Add New Type</h2>
+        <form id="typeForm">
+            <label>Name: <input type="text" id="typeName" required></label>
+            <button type="submit">Add Type</button>
         </form>
     </section>
 
-    <section id="inventory">
-        <h2>Current Inventory</h2>
-        <table id="inventoryTable">
-            <thead>
-                <tr><th>Name</th><th>Qty</th><th>Barcode</th><th>Notes</th><th>Actions</th></tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
+    <section id="type-list">
+        <h2>Existing Types</h2>
+        <ul id="types"></ul>
     </section>
 
-    <script src="script.js"></script>
+    <script src="home.js"></script>
 </body>
 </html>
