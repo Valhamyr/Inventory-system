@@ -118,4 +118,24 @@ window.addEventListener('DOMContentLoaded', () => {
         typeList.addEventListener('click', handleTypeListClick);
     }
     renderTypeOptions();
+    const searchForm = document.getElementById('searchForm');
+    if (searchForm) {
+        searchForm.addEventListener('submit', handleSearch);
+    }
 });
+
+function handleSearch(e) {
+    e.preventDefault();
+    const code = document.getElementById('searchInput').value.trim();
+    const msg = document.getElementById('searchMessage');
+    if (!code) return;
+    const types = loadTypes();
+    for (const t of types) {
+        const items = loadItemsForType(t);
+        if (items.find(it => it.barcode === code)) {
+            location.href = `inventory.html?type=${encodeURIComponent(t)}&barcode=${encodeURIComponent(code)}`;
+            return;
+        }
+    }
+    if (msg) msg.textContent = 'Item not found';
+}
