@@ -304,17 +304,35 @@ async function processInvoiceFile(file) {
 function parseInvoiceCSV(text) {
     const lines = text.split(/\r?\n/).filter(l => l.trim());
     if (lines.length < 2) return;
-    const headers = lines[0].split(',').map(h => h.trim());
+    const rawHeaders = lines[0].split(',').map(h => h.trim());
+    const fields = loadFields();
+    const map = {};
+    fields.forEach(f => {
+        map[normalize(f.label)] = f.key;
+        map[normalize(f.key)] = f.key;
+    });
+    const synonyms = { quantity: 'amount', qty: 'amount', code: 'barcode', price: 'price' };
+    const headers = rawHeaders.map(h => {
+        const n = normalize(h);
+        return map[n] || synonyms[n] || n;
+    });
     let items = loadItems();
     for (let i = 1; i < lines.length; i++) {
         const cols = lines[i].split(',').map(c => c.trim());
         const item = {};
-        headers.forEach((h, idx) => {
-            item[h] = cols[idx] || '';
+        headers.forEach((key, idx) => {
+            item[key] = cols[idx] || '';
         });
+        if (!item['barcode']) {
+            item['barcode'] = getNextBarcode();
+        }
         items.push(item);
     }
     saveItems(items);
+}
+
+function normalize(str) {
+    return String(str).toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 async function handleProcessInvoice() {

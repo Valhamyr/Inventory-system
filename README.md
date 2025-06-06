@@ -32,4 +32,10 @@ The invoice upload feature now accepts comma separated value (`.csv`) files.
 Each row in the CSV should correspond to an inventory item and include column
 headers that match your field names (for example `name,barcode,amount`).
 When a CSV file is selected on the inventory page the items are parsed directly
-in the browser and added to your local inventory.
+in the browser and added to your local inventory. Header names are matched
+case-insensitively to your inventory fields and common synonyms like `quantity`
+or `code` are recognized automatically. If a barcode column is missing one will
+be generated for each imported row.
+
+The repository includes `mock_inventory_fabrics.csv` as a sample file that you
+can use to test the import feature.
