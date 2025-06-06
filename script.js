@@ -281,6 +281,80 @@ function handleBarcodeInput(e) {
     }
 }
 
+async function processInvoiceFile(file) {
+    const buffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({data: buffer}).promise;
+    let text = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        text += content.items.map(it => it.str).join(' ') + '\n';
+    }
+    parseInvoiceText(text);
+}
+
+function parseInvoiceText(text) {
+    const fields = loadFields();
+    const barcodeKey = fields.find(f => f.key === 'barcode')?.key || 'barcode';
+    const nameKey = fields.find(f => f.key === 'name')?.key || 'name';
+    const amountKey = fields.find(f => f.key === 'amount')?.key || 'amount';
+    let items = loadItems();
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+    lines.forEach(line => {
+        const parts = line.split(/[\t,]+/).map(p => p.trim()).filter(p => p);
+        if (parts.length < 2) return;
+        let name = '', barcode = '', amount = 0;
+        if (/^[A-Z0-9-]+$/.test(parts[0]) && parts.length >= 3) {
+            barcode = parts[0];
+            name = parts[1];
+            amount = parseInt(parts[2], 10) || 0;
+        } else {
+            name = parts[0];
+            if (parts[1] && /^[A-Z0-9-]+$/.test(parts[1])) {
+                barcode = parts[1];
+                amount = parseInt(parts[2], 10) || 0;
+            } else {
+                amount = parseInt(parts[1], 10) || 0;
+            }
+        }
+        if (!name) return;
+        if (!barcode) barcode = getNextBarcode();
+        let item = items.find(i => i[barcodeKey] === barcode);
+        if (item) {
+            item[nameKey] = name;
+            item[amountKey] = (parseInt(item[amountKey], 10) || 0) + amount;
+        } else {
+            const newItem = {};
+            fields.forEach(f => {
+                if (f.key === barcodeKey) newItem[f.key] = barcode;
+                else if (f.key === nameKey) newItem[f.key] = name;
+                else if (f.key === amountKey) newItem[f.key] = amount;
+                else newItem[f.key] = '';
+            });
+            items.push(newItem);
+        }
+    });
+    saveItems(items);
+}
+
+async function handleProcessInvoice() {
+    const input = document.getElementById('invoiceFile');
+    const status = document.getElementById('invoiceStatus');
+    if (!input || !input.files.length) {
+        if (status) status.textContent = 'Select a PDF file.';
+        return;
+    }
+    if (status) status.textContent = 'Processing...';
+    try {
+        await processInvoiceFile(input.files[0]);
+        if (status) status.textContent = 'Invoice processed.';
+        renderItems();
+    } catch (err) {
+        console.error(err);
+        if (status) status.textContent = 'Failed to process invoice.';
+    }
+}
+
 window.addEventListener('DOMContentLoaded', () => {
     renderEditFields();
     renderTableHeader();
@@ -293,6 +367,8 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('barcodeInput').addEventListener('keydown', handleBarcodeInput);
     const btn = document.getElementById('editFieldsBtn');
     if (btn) btn.addEventListener('click', editFields);
+    const invoiceBtn = document.getElementById('processInvoiceBtn');
+    if (invoiceBtn) invoiceBtn.addEventListener('click', handleProcessInvoice);
     const initialBarcode = params.get('barcode');
     if (initialBarcode) {
         selectItemByBarcode(initialBarcode);
