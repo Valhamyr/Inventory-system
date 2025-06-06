@@ -17,4 +17,3 @@ A lightweight web-based inventory tracking application that works with Bluetooth
 
 ## Deployment
 This project can be hosted on GitHub Pages. In your repository settings, enable **GitHub Pages** for the `main` branch (or the branch containing this code) and select the root directory.
-
