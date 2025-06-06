@@ -55,9 +55,11 @@ function editFields() {
         saveItems(items);
     }
     saveFields(newFields);
-    renderFormFields();
+    renderEditFields();
     renderTableHeader();
     renderItems();
+    const current = loadItems().find(i => i.barcode === selectedBarcode);
+    showItemDetails(current || null);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -76,22 +78,60 @@ function saveItems(items) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
 }
 
-function showItemDetails(item) {
-    const container = document.getElementById('detailsContent');
+function getNextBarcode() {
+    const items = loadItems();
+    let nextId = 1;
+    items.forEach(item => {
+        if (item.barcode && item.barcode.startsWith(`${inventoryType}-`)) {
+            const num = parseInt(item.barcode.slice(inventoryType.length + 1), 10);
+            if (!isNaN(num) && num >= nextId) {
+                nextId = num + 1;
+            }
+        }
+    });
+    return `${inventoryType}-${nextId}`;
+}
+
+function renderEditFields() {
+    const fields = loadFields();
+    const container = document.getElementById('selectedFields');
     if (!container) return;
+    container.innerHTML = '';
+    fields.forEach(f => {
+        const label = document.createElement('label');
+        label.textContent = f.label + ': ';
+        let input;
+        if (f.multiLine) {
+            input = document.createElement('textarea');
+            input.rows = 3;
+        } else {
+            input = document.createElement('input');
+            input.type = f.key === 'amount' ? 'number' : 'text';
+            if (f.key === 'amount') input.min = '0';
+        }
+        input.id = `edit_${f.key}`;
+        if (f.key === 'barcode') input.readOnly = true;
+        label.appendChild(input);
+        container.appendChild(label);
+    });
+}
+
+function showItemDetails(item) {
+    const form = document.getElementById('selectedForm');
+    const msg = document.getElementById('noSelection');
+    if (!form || !msg) return;
     if (!item) {
-        container.textContent = 'Item not found';
+        form.style.display = 'none';
+        msg.style.display = 'block';
         return;
     }
-    container.innerHTML = '';
+    msg.style.display = 'none';
+    form.style.display = 'block';
     const fields = loadFields();
-    const ul = document.createElement('ul');
     fields.forEach(f => {
-        const li = document.createElement('li');
-        li.textContent = `${f.label}: ${item[f.key] || ''}`;
-        ul.appendChild(li);
+        const input = document.getElementById(`edit_${f.key}`);
+        if (input) input.value = item[f.key] || '';
     });
-    container.appendChild(ul);
 }
 
 function selectItemByBarcode(barcode) {
@@ -108,29 +148,6 @@ function selectItemByBarcode(barcode) {
     else showItemDetails(null);
 }
 
-function renderFormFields() {
-    const fields = loadFields();
-    const container = document.getElementById('formFields');
-    if (!container) return;
-    container.innerHTML = '';
-    fields.forEach(f => {
-        const label = document.createElement('label');
-        label.textContent = f.label + ': ';
-        let input;
-        if (f.multiLine) {
-            input = document.createElement('textarea');
-            input.rows = 3;
-        } else {
-            input = document.createElement('input');
-            input.type = f.key === 'amount' ? 'number' : 'text';
-            if (f.key === 'amount') input.min = '0';
-        }
-        input.id = `field_${f.key}`;
-        if (f.key === 'barcode') input.required = true;
-        label.appendChild(input);
-        container.appendChild(label);
-    });
-}
 
 function renderTableHeader() {
     const fields = loadFields();
@@ -171,7 +188,7 @@ function renderItems() {
             tr.appendChild(td);
         });
         const act = document.createElement('td');
-        act.innerHTML = `<button data-edit="${item.barcode}">Edit</button> <button data-delete="${item.barcode}">Delete</button>`;
+        act.innerHTML = `<button data-delete="${item.barcode}">Delete</button>`;
         tr.appendChild(act);
         tbody.appendChild(tr);
     });
@@ -184,48 +201,58 @@ function renderItems() {
     }
 }
 
-function addOrUpdateItem(e) {
+function updateSelectedItem(e) {
     e.preventDefault();
+    if (!selectedBarcode) return;
+    let items = loadItems();
+    const item = items.find(i => i.barcode === selectedBarcode);
+    if (!item) return;
     const fields = loadFields();
-    const newItem = {};
     fields.forEach(f => {
-        const val = document.getElementById(`field_${f.key}`).value.trim();
+        const input = document.getElementById(`edit_${f.key}`);
+        if (!input) return;
+        const val = input.value.trim();
         if (f.key === 'amount') {
-            newItem[f.key] = parseInt(val, 10) || 0;
+            item[f.key] = parseInt(val, 10) || 0;
         } else {
-            newItem[f.key] = val;
+            item[f.key] = val;
         }
     });
-    if (!newItem.barcode) return;
-    let items = loadItems();
-    const existing = items.find(i => i.barcode === newItem.barcode);
-    if (existing) {
-        fields.forEach(f => {
-            existing[f.key] = newItem[f.key];
-        });
-    } else {
-        items.push(newItem);
-    }
     saveItems(items);
     renderItems();
+    selectItemByBarcode(selectedBarcode);
+}
+
+function handleAddItem(e) {
+    e.preventDefault();
+    const name = document.getElementById('newItemName').value.trim();
+    if (!name) return;
+    let items = loadItems();
+    const barcode = getNextBarcode();
+    const newItem = {};
+    const fields = loadFields();
+    fields.forEach(f => {
+        if (f.key === 'name') {
+            newItem[f.key] = name;
+        } else if (f.key === 'barcode') {
+            newItem[f.key] = barcode;
+        } else if (f.key === 'amount') {
+            newItem[f.key] = 0;
+        } else {
+            newItem[f.key] = '';
+        }
+    });
+    items.push(newItem);
+    saveItems(items);
+    JsBarcode(document.getElementById('newItemBarcode'), barcode, {displayValue: true});
+    renderItems();
+    selectItemByBarcode(barcode);
     e.target.reset();
 }
 
 function handleTableClick(e) {
-    const editBarcode = e.target.dataset.edit;
     const delBarcode = e.target.dataset.delete;
-    if (editBarcode) {
-        const item = loadItems().find(i => i.barcode === editBarcode);
-        if (item) {
-            const fields = loadFields();
-            fields.forEach(f => {
-                const input = document.getElementById(`field_${f.key}`);
-                if (input) {
-                    input.value = item[f.key] || '';
-                }
-            });
-        }
-    } else if (delBarcode) {
+    if (delBarcode) {
         let items = loadItems().filter(i => i.barcode !== delBarcode);
         saveItems(items);
         renderItems();
@@ -242,19 +269,10 @@ function handleBarcodeInput(e) {
         e.preventDefault();
         const code = e.target.value.trim();
         if (code) {
-            const barcodeInput = document.getElementById('field_barcode');
-            if (barcodeInput) barcodeInput.value = code;
             const item = loadItems().find(i => i.barcode === code);
-            const fields = loadFields();
             if (item) {
-                fields.forEach(f => {
-                    const input = document.getElementById(`field_${f.key}`);
-                    if (input) input.value = item[f.key] || '';
-                });
                 selectItemByBarcode(code);
             } else {
-                document.getElementById('itemForm').reset();
-                if (barcodeInput) barcodeInput.value = code;
                 selectedBarcode = null;
                 showItemDetails(null);
             }
@@ -264,10 +282,13 @@ function handleBarcodeInput(e) {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-    renderFormFields();
+    renderEditFields();
     renderTableHeader();
     renderItems();
-    document.getElementById('itemForm').addEventListener('submit', addOrUpdateItem);
+    const addForm = document.getElementById('addItemForm');
+    if (addForm) addForm.addEventListener('submit', handleAddItem);
+    const selForm = document.getElementById('selectedForm');
+    if (selForm) selForm.addEventListener('submit', updateSelectedItem);
     document.querySelector('#inventoryTable tbody').addEventListener('click', handleTableClick);
     document.getElementById('barcodeInput').addEventListener('keydown', handleBarcodeInput);
     const btn = document.getElementById('editFieldsBtn');

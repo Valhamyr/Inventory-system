@@ -16,12 +16,13 @@
         <input type="text" id="barcodeInput" placeholder="Scan barcode" autofocus>
     </section>
 
-    <section id="item-form-section">
-        <h2>Add / Update Item</h2>
-        <form id="itemForm">
-            <div id="formFields"></div>
-            <button type="submit">Add / Update</button>
+    <section id="add-item-section">
+        <h2>Add New Item</h2>
+        <form id="addItemForm">
+            <label>Name: <input type="text" id="newItemName" required></label>
+            <button type="submit">Generate Barcode</button>
         </form>
+        <svg id="newItemBarcode" class="barcode"></svg>
         <button id="editFieldsBtn">Edit Fields</button>
     </section>
 
@@ -37,8 +38,12 @@
     </section>
 
     <section id="item-details">
-        <h2>Item Details</h2>
-        <div id="detailsContent">Select an item to see details</div>
+        <h2>Selected Item</h2>
+        <div id="noSelection">Select an item to edit</div>
+        <form id="selectedForm" style="display:none;">
+            <div id="selectedFields"></div>
+            <button type="submit">Update Item</button>
+        </form>
     </section>
 
     <script src="script.js"></script>
