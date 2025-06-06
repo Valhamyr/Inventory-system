@@ -1,0 +1,20 @@
+# Inventory Tracker
+
+A lightweight web-based inventory tracking application that works with Bluetooth barcode scanners and stores data in your browser's localStorage. Barcodes are rendered using [JsBarcode](https://github.com/lindell/JsBarcode).
+
+## Features
+- Add, update, and remove inventory items
+- Scan barcodes with a Bluetooth scanner or type them manually
+- Data is stored locally in your browser (no server required)
+- Barcodes for each item are displayed in the table
+- Responsive layout for desktop and mobile
+
+## Usage
+1. Open `index.html` in your browser or view the deployed GitHub Pages site.
+2. Scan a barcode into the **Scan Barcode** field or type it manually and press **Enter**.
+3. Fill in the item details and submit the form to add or update the item.
+4. Inventory items appear in the table where you can edit or delete them.
+
+## Deployment
+This project can be hosted on GitHub Pages. In your repository settings, enable **GitHub Pages** for the `main` branch (or the branch containing this code) and select the root directory.
+
