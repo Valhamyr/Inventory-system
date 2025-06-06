@@ -1,0 +1,41 @@
+body {
+    font-family: Arial, sans-serif;
+    padding: 1rem;
+    margin: 0;
+}
+
+h1, h2 {
+    text-align: center;
+}
+
+section {
+    margin-bottom: 2rem;
+}
+
+#itemForm label {
+    display: block;
+    margin: 0.5rem 0;
+}
+
+#inventoryTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#inventoryTable th, #inventoryTable td {
+    border: 1px solid #ddd;
+    padding: 0.5rem;
+    text-align: left;
+}
+
+.barcode {
+    display: block;
+    margin: 0 auto;
+}
+
+@media (min-width: 600px) {
+    #itemForm label {
+        display: inline-block;
+        margin-right: 1rem;
+    }
+}
