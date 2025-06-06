@@ -84,7 +84,7 @@ function handleGenerateBarcode(e) {
     if (!type || !name) return;
     const items = loadItemsForType(type);
     const barcode = getNextBarcode(type);
-    items.push({name, quantity: 0, barcode, notes: ''});
+    items.push({name, amount: 0, barcode, notes: ''});
     saveItemsForType(type, items);
     const svg = document.getElementById('generatedBarcode');
     JsBarcode(svg, barcode, {displayValue: true});
