@@ -310,23 +310,30 @@ function parseInvoiceText(text) {
     const nameKey = fields.find(f => f.key === 'name')?.key || 'name';
     const amountKey = fields.find(f => f.key === 'amount')?.key || 'amount';
     let items = loadItems();
-    const ignoreRe = /(subtotal|total|invoice|order|date|page|ship|amount|description)/i;
+    // determine the next sequential barcode ID based on existing items
+    let nextId = 1;
+    items.forEach(item => {
+        const code = item[barcodeKey];
+        if (code && code.startsWith(`${inventoryType}-`)) {
+            const num = parseInt(code.slice(inventoryType.length + 1), 10);
+            if (!isNaN(num) && num >= nextId) nextId = num + 1;
+        }
+    });
+    const ignoreRe = /(subtotal|total|invoice|order|date|page|ship|amount|description|tax|phone|fax|balance|payment|thank|address)/i;
     const lines = text.split(/\r?\n/)
         .map(l => l.trim())
         .filter(l => l && !ignoreRe.test(l));
     lines.forEach(line => {
         if (!/\d/.test(line)) return;
-        let name = '', barcode = '', amount = 0;
+        let name = '', amount = 0;
         let match = line.match(/^([A-Z0-9-]+)[\s,]+(.+?)[\s,]+(\d+)(?:\s|$)/i);
         if (match) {
-            barcode = match[1];
             name = match[2];
             amount = parseInt(match[3], 10) || 0;
         } else {
             match = line.match(/^(.+?)[\s,]+([A-Z0-9-]+)[\s,]+(\d+)(?:\s|$)/i);
             if (match) {
                 name = match[1];
-                barcode = match[2];
                 amount = parseInt(match[3], 10) || 0;
             } else {
                 match = line.match(/^(.+?)[\s,]+(\d+)(?:\s|$)/);
@@ -339,7 +346,7 @@ function parseInvoiceText(text) {
             }
         }
         if (!name) return;
-        if (!barcode) barcode = getNextBarcode();
+        const barcode = `${inventoryType}-${nextId++}`;
         let item = items.find(i => i[barcodeKey] === barcode);
         if (item) {
             item[nameKey] = name;
