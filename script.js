@@ -319,6 +319,13 @@ async function processInvoiceFile(file) {
     parseInvoiceText(lines.join('\n'));
 }
 
+function isItemLine(line, ignoreRe) {
+    if (!/\d/.test(line) || ignoreRe.test(line)) return false;
+    const tokens = line.split(/\s+/);
+    const numIdx = tokens.findIndex(t => /^(?:\d+[.,]?\d*)$/.test(t.replace(/[,]/g,'')));
+    return numIdx > 0;
+}
+
 function parseInvoiceText(text) {
     const fields = loadFields();
     const barcodeKey = fields.find(f => f.key === 'barcode')?.key || 'barcode';
@@ -337,28 +344,16 @@ function parseInvoiceText(text) {
     const ignoreRe = /(subtotal|total|invoice|order|date|page|ship|amount|description|tax|phone|fax|balance|payment|thank|address)/i;
     const lines = text.split(/\r?\n/)
         .map(l => l.trim())
-        .filter(l => l && !ignoreRe.test(l));
+        .filter(l => l && isItemLine(l, ignoreRe));
     lines.forEach(line => {
-        if (!/\d/.test(line)) return;
         let name = '', amountStr = '';
-        let match = line.match(/^([A-Z0-9-]+)[\s,]+(.+?)[\s,]+([0-9]+(?:[.,][0-9]+)?[^\s]*)/i);
-        if (match) {
-            name = match[2];
-            amountStr = match[3];
+        const tokens = line.split(/\s+/);
+        const numIdx = tokens.findIndex(t => /^(?:\d+[.,]?\d*)$/.test(t.replace(/[,]/g,'')));
+        if (numIdx > 0) {
+            name = tokens.slice(0, numIdx).join(' ').replace(/[,:;-]+$/, '');
+            amountStr = tokens[numIdx];
         } else {
-            match = line.match(/^(.+?)[\s,]+([A-Z0-9-]+)[\s,]+([0-9]+(?:[.,][0-9]+)?[^\s]*)/i);
-            if (match) {
-                name = match[1];
-                amountStr = match[3];
-            } else {
-                match = line.match(/^(.+?)[\s,]+([0-9]+(?:[.,][0-9]+)?[^\s]*)/);
-                if (match) {
-                    name = match[1];
-                    amountStr = match[2];
-                } else {
-                    return; // unable to parse this line
-                }
-            }
+            return;
         }
         let amount = 0;
         if (/^\d+\s*\/\s*\d+$/.test(amountStr)) {
