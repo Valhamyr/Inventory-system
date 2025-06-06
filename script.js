@@ -284,13 +284,24 @@ function handleBarcodeInput(e) {
 async function processInvoiceFile(file) {
     const buffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({data: buffer}).promise;
-    let text = '';
+    const lines = [];
     for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
-        text += content.items.map(it => it.str).join(' ') + '\n';
+        let lastY = null;
+        let lineParts = [];
+        content.items.forEach(item => {
+            const y = item.transform[5];
+            if (lastY !== null && Math.abs(y - lastY) > 5) {
+                if (lineParts.length) lines.push(lineParts.join(' '));
+                lineParts = [];
+            }
+            lineParts.push(item.str.trim());
+            lastY = y;
+        });
+        if (lineParts.length) lines.push(lineParts.join(' '));
     }
-    parseInvoiceText(text);
+    parseInvoiceText(lines.join('\n'));
 }
 
 function parseInvoiceText(text) {
@@ -299,8 +310,12 @@ function parseInvoiceText(text) {
     const nameKey = fields.find(f => f.key === 'name')?.key || 'name';
     const amountKey = fields.find(f => f.key === 'amount')?.key || 'amount';
     let items = loadItems();
-    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+    const ignoreRe = /(subtotal|total|invoice|order|date|page|ship|amount|description)/i;
+    const lines = text.split(/\r?\n/)
+        .map(l => l.trim())
+        .filter(l => l && !ignoreRe.test(l));
     lines.forEach(line => {
+        if (!/\d/.test(line)) return;
         let name = '', barcode = '', amount = 0;
         let match = line.match(/^([A-Z0-9-]+)[\s,]+(.+?)[\s,]+(\d+)(?:\s|$)/i);
         if (match) {
