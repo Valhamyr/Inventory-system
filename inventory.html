@@ -6,7 +6,6 @@
     <title>Inventory Tracker</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@2.16.105/build/pdf.min.js"></script>
 </head>
 <body>
 <div class="container">
@@ -55,8 +54,7 @@
 
     <section id="invoice-upload">
         <h2>Import Items from Invoice</h2>
-        <input type="file" id="invoiceFile" accept="application/pdf">
-        <button id="processInvoiceBtn">Process Invoice</button>
+        <input type="file" id="invoiceFile" accept=".csv,text/csv">
         <p id="invoiceStatus"></p>
     </section>
 
