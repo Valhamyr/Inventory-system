@@ -12,6 +12,8 @@ section {
     margin-bottom: 2rem;
 }
 
+#selectedForm label,
+#addItemForm label,
 #itemForm label {
     display: block;
     margin: 0.5rem 0;
@@ -34,11 +36,14 @@ section {
     margin: 0 auto;
 }
 
+#selectedForm textarea,
 #itemForm textarea {
     width: 100%;
 }
 
 @media (min-width: 600px) {
+    #selectedForm label,
+    #addItemForm label,
     #itemForm label {
         display: inline-block;
         margin-right: 1rem;
