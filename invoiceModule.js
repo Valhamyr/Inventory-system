@@ -1,38 +1,30 @@
+// Parse a CSV file and add the resulting items to the inventory.
+// The first row must contain headers that match the inventory field keys
+// (e.g. "name", "barcode", "amount").
 export async function handleFileUpload(file) {
-  const text = await extractTextFromPDF(file);
-  const items = await sendTextToAPI(text);
-  if (items) {
+  const items = await parseCSVFile(file);
+  if (items && items.length) {
     addItemsToInventory(items);
   }
 }
 
-export async function extractTextFromPDF(pdfFile) {
-  const buffer = await pdfFile.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-  let text = '';
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    const pageText = content.items.map(it => it.str).join(' ');
-    text += pageText + '\n';
+// Reads a CSV file and converts it into an array of objects keyed by the
+// header names. Empty lines are ignored.
+export async function parseCSVFile(csvFile) {
+  const text = await csvFile.text();
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.trim());
+  const items = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(',').map(c => c.trim());
+    const item = {};
+    headers.forEach((h, idx) => {
+      item[h] = cols[idx] || '';
+    });
+    items.push(item);
   }
-  return text;
-}
-
-// Sends extracted invoice text to the local backend which in turn
-// uses the OpenAI API to parse the line items.
-export async function sendTextToAPI(text) {
-  const apiUrl =
-    location.protocol === 'file:'
-      ? 'http://localhost:3000/api/parse-invoice'
-      : '/api/parse-invoice';
-  const response = await fetch(apiUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text })
-  });
-  if (!response.ok) throw new Error('API request failed');
-  return response.json();
+  return items;
 }
 
 export function addItemsToInventory(items) {

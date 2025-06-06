@@ -297,88 +297,23 @@ function handleBarcodeInput(e) {
 }
 
 async function processInvoiceFile(file) {
-    const buffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({data: buffer}).promise;
-    const lines = [];
-    for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        let lastY = null;
-        let lineParts = [];
-        content.items.forEach(item => {
-            const y = item.transform[5];
-            if (lastY !== null && Math.abs(y - lastY) > 5) {
-                if (lineParts.length) lines.push(lineParts.join(' '));
-                lineParts = [];
-            }
-            lineParts.push(item.str.trim());
-            lastY = y;
-        });
-        if (lineParts.length) lines.push(lineParts.join(' '));
-    }
-    parseInvoiceText(lines.join('\n'));
+    const text = await file.text();
+    parseInvoiceCSV(text);
 }
 
-function isItemLine(line, ignoreRe) {
-    if (!/\d/.test(line) || ignoreRe.test(line)) return false;
-    const tokens = line.split(/\s+/);
-    const numIdx = tokens.findIndex(t => /^(?:\d+[.,]?\d*)$/.test(t.replace(/[,]/g,'')));
-    return numIdx > 0;
-}
-
-function parseInvoiceText(text) {
-    const fields = loadFields();
-    const barcodeKey = fields.find(f => f.key === 'barcode')?.key || 'barcode';
-    const nameKey = fields.find(f => f.key === 'name')?.key || 'name';
-    const amountKey = fields.find(f => f.key === 'amount')?.key || 'amount';
+function parseInvoiceCSV(text) {
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) return;
+    const headers = lines[0].split(',').map(h => h.trim());
     let items = loadItems();
-    // determine the next sequential barcode ID based on existing items
-    let nextId = 1;
-    items.forEach(item => {
-        const code = item[barcodeKey];
-        if (code && code.startsWith(`${inventoryType}-`)) {
-            const num = parseInt(code.slice(inventoryType.length + 1), 10);
-            if (!isNaN(num) && num >= nextId) nextId = num + 1;
-        }
-    });
-    const ignoreRe = /(subtotal|total|invoice|order|date|page|ship|amount|description|tax|phone|fax|balance|payment|thank|address)/i;
-    const lines = text.split(/\r?\n/)
-        .map(l => l.trim())
-        .filter(l => l && isItemLine(l, ignoreRe));
-    lines.forEach(line => {
-        let name = '', amountStr = '';
-        const tokens = line.split(/\s+/);
-        const numIdx = tokens.findIndex(t => /^(?:\d+[.,]?\d*)$/.test(t.replace(/[,]/g,'')));
-        if (numIdx > 0) {
-            name = tokens.slice(0, numIdx).join(' ').replace(/[,:;-]+$/, '');
-            amountStr = tokens[numIdx];
-        } else {
-            return;
-        }
-        let amount = 0;
-        if (/^\d+\s*\/\s*\d+$/.test(amountStr)) {
-            const [n,d] = amountStr.split('/').map(n => parseFloat(n));
-            amount = d ? n/d : n;
-        } else {
-            amount = parseFloat(amountStr.replace(/[^0-9.]/g, '')) || 0;
-        }
-        if (!name) return;
-        const barcode = `${inventoryType}-${nextId++}`;
-        let item = items.find(i => i[barcodeKey] === barcode);
-        if (item) {
-            item[nameKey] = name;
-            item[amountKey] = (parseInt(item[amountKey], 10) || 0) + amount;
-        } else {
-            const newItem = {};
-            fields.forEach(f => {
-                if (f.key === barcodeKey) newItem[f.key] = barcode;
-                else if (f.key === nameKey) newItem[f.key] = name;
-                else if (f.key === amountKey) newItem[f.key] = amount;
-                else newItem[f.key] = '';
-            });
-            items.push(newItem);
-        }
-    });
+    for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(',').map(c => c.trim());
+        const item = {};
+        headers.forEach((h, idx) => {
+            item[h] = cols[idx] || '';
+        });
+        items.push(item);
+    }
     saveItems(items);
 }
 
@@ -386,7 +321,7 @@ async function handleProcessInvoice() {
     const input = document.getElementById('invoiceFile');
     const status = document.getElementById('invoiceStatus');
     if (!input || !input.files.length) {
-        if (status) status.textContent = 'Select a PDF file.';
+        if (status) status.textContent = 'Select a CSV file.';
         return;
     }
     if (status) status.textContent = 'Processing...';

@@ -26,14 +26,10 @@ A lightweight web-based inventory tracking application that works with Bluetooth
 ## Deployment
 This project can be hosted on GitHub Pages. In your repository settings, enable **GitHub Pages** for the `main` branch (or the branch containing this code) and select the root directory.
 
-## Invoice Parsing with OpenAI
+## Importing Items from CSV
 
-A small Node.js backend is included to process PDF invoices using the OpenAI API.
-To run it locally:
-
-1. Install dependencies with `npm install`.
-2. Export your OpenAI API key as `OPENAI_API_KEY`.
-3. Start the server using `npm start`.
-4. Open `inventory.html` and use the **Import Items from Invoice** section to upload a PDF.
-
-The frontend will send the extracted text to `/api/parse-invoice` on `localhost:3000` where the server calls OpenAI and returns parsed items.
+The invoice upload feature now accepts comma separated value (`.csv`) files.
+Each row in the CSV should correspond to an inventory item and include column
+headers that match your field names (for example `name,barcode,amount`).
+When a CSV file is selected on the inventory page the items are parsed directly
+in the browser and added to your local inventory.
