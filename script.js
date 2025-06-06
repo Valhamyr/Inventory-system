@@ -301,20 +301,26 @@ function parseInvoiceText(text) {
     let items = loadItems();
     const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
     lines.forEach(line => {
-        const parts = line.split(/[\t,]+/).map(p => p.trim()).filter(p => p);
-        if (parts.length < 2) return;
         let name = '', barcode = '', amount = 0;
-        if (/^[A-Z0-9-]+$/.test(parts[0]) && parts.length >= 3) {
-            barcode = parts[0];
-            name = parts[1];
-            amount = parseInt(parts[2], 10) || 0;
+        let match = line.match(/^([A-Z0-9-]+)[\s,]+(.+?)[\s,]+(\d+)(?:\s|$)/i);
+        if (match) {
+            barcode = match[1];
+            name = match[2];
+            amount = parseInt(match[3], 10) || 0;
         } else {
-            name = parts[0];
-            if (parts[1] && /^[A-Z0-9-]+$/.test(parts[1])) {
-                barcode = parts[1];
-                amount = parseInt(parts[2], 10) || 0;
+            match = line.match(/^(.+?)[\s,]+([A-Z0-9-]+)[\s,]+(\d+)(?:\s|$)/i);
+            if (match) {
+                name = match[1];
+                barcode = match[2];
+                amount = parseInt(match[3], 10) || 0;
             } else {
-                amount = parseInt(parts[1], 10) || 0;
+                match = line.match(/^(.+?)[\s,]+(\d+)(?:\s|$)/);
+                if (match) {
+                    name = match[1];
+                    amount = parseInt(match[2], 10) || 0;
+                } else {
+                    return; // unable to parse this line
+                }
             }
         }
         if (!name) return;
