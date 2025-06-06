@@ -447,8 +447,7 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('barcodeInput').addEventListener('keydown', handleBarcodeInput);
     const btn = document.getElementById('editFieldsBtn');
     if (btn) btn.addEventListener('click', editFields);
-    const invoiceBtn = document.getElementById('processInvoiceBtn');
-    if (invoiceBtn) invoiceBtn.addEventListener('click', handleProcessInvoice);
+    // Invoice processing is now handled by invoiceModule.js via the file input
     const selectAllBox = document.getElementById('selectAllCheckbox');
     if (selectAllBox) selectAllBox.addEventListener('change', handleSelectAll);
     const printBtn = document.getElementById('printSelectedBtn');
