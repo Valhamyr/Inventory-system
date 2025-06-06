@@ -26,11 +26,16 @@ section {
     border: 1px solid #ddd;
     padding: 0.5rem;
     text-align: left;
+    white-space: pre-wrap;
 }
 
 .barcode {
     display: block;
     margin: 0 auto;
+}
+
+#itemForm textarea {
+    width: 100%;
 }
 
 @media (min-width: 600px) {

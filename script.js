@@ -4,9 +4,13 @@ const STORAGE_KEY = `inventoryItems_${inventoryType}`;
 const FIELD_KEY = `inventoryFields_${inventoryType}`;
 const DEFAULT_FIELDS = [
     {key: 'name', label: 'Name'},
-    {key: 'quantity', label: 'Qty'},
     {key: 'barcode', label: 'Barcode'},
-    {key: 'notes', label: 'Notes'}
+    {key: 'amount', label: 'Amount'},
+    {key: 'material', label: 'Material', multiLine: true},
+    {key: 'color', label: 'Color'},
+    {key: 'store_url', label: 'Store URL'},
+    {key: 'price', label: 'Price'},
+    {key: 'notes', label: 'Notes', multiLine: true}
 ];
 
 function loadFields() {
@@ -33,7 +37,7 @@ function editFields() {
     const newFields = [];
     newLabels.forEach((label, idx) => {
         if (current[idx]) {
-            newFields.push({key: current[idx].key, label});
+            newFields.push({key: current[idx].key, label, multiLine: current[idx].multiLine});
         } else {
             const key = label.toLowerCase().replace(/\s+/g, '_');
             newFields.push({key, label});
@@ -78,10 +82,16 @@ function renderFormFields() {
     fields.forEach(f => {
         const label = document.createElement('label');
         label.textContent = f.label + ': ';
-        const input = document.createElement('input');
+        let input;
+        if (f.multiLine) {
+            input = document.createElement('textarea');
+            input.rows = 3;
+        } else {
+            input = document.createElement('input');
+            input.type = f.key === 'amount' ? 'number' : 'text';
+            if (f.key === 'amount') input.min = '0';
+        }
         input.id = `field_${f.key}`;
-        input.type = f.key === 'quantity' ? 'number' : 'text';
-        if (f.key === 'quantity') input.min = '0';
         if (f.key === 'barcode') input.required = true;
         label.appendChild(input);
         container.appendChild(label);
@@ -139,7 +149,7 @@ function addOrUpdateItem(e) {
     const newItem = {};
     fields.forEach(f => {
         const val = document.getElementById(`field_${f.key}`).value.trim();
-        if (f.key === 'quantity') {
+        if (f.key === 'amount') {
             newItem[f.key] = parseInt(val, 10) || 0;
         } else {
             newItem[f.key] = val;

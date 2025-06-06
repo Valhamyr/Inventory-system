@@ -11,6 +11,8 @@ A lightweight web-based inventory tracking application that works with Bluetooth
 - Barcodes for each item are displayed in the table
 - Generate new item barcodes from the home page
 - Responsive layout for desktop and mobile
+- Default item fields include Name, Barcode, Amount, Material, Color, Store URL,
+  Price and Notes. Material and Notes support multiline input.
 
 ## Usage
 1. Open `index.html` in your browser to see a list of inventory types.
