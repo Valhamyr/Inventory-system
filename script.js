@@ -154,6 +154,12 @@ function renderTableHeader() {
     const row = document.getElementById('headerRow');
     if (!row) return;
     row.innerHTML = '';
+    const selectTh = document.createElement('th');
+    const selectAll = document.createElement('input');
+    selectAll.type = 'checkbox';
+    selectAll.id = 'selectAllCheckbox';
+    selectTh.appendChild(selectAll);
+    row.appendChild(selectTh);
     fields.forEach(f => {
         const th = document.createElement('th');
         th.textContent = f.label;
@@ -175,6 +181,12 @@ function renderItems() {
         if (selectedBarcode === item.barcode) {
             tr.classList.add('selected');
         }
+        const checkTd = document.createElement('td');
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.className = 'row-select';
+        checkTd.appendChild(cb);
+        tr.appendChild(checkTd);
         fields.forEach(f => {
             const td = document.createElement('td');
             if (f.key === 'barcode') {
@@ -196,6 +208,8 @@ function renderItems() {
         const code = svg.dataset.code;
         if (code) JsBarcode(svg, code, {displayValue: true});
     });
+    const selectAll = document.getElementById('selectAllCheckbox');
+    if (selectAll) selectAll.checked = false;
     if (selectedBarcode) {
         selectItemByBarcode(selectedBarcode);
     }
@@ -251,6 +265,7 @@ function handleAddItem(e) {
 }
 
 function handleTableClick(e) {
+    if (e.target.closest('input.row-select')) return;
     const delBarcode = e.target.dataset.delete;
     if (delBarcode) {
         let items = loadItems().filter(i => i.barcode !== delBarcode);
@@ -383,6 +398,41 @@ async function handleProcessInvoice() {
     }
 }
 
+function handleSelectAll(e) {
+    const checked = e.target.checked;
+    document.querySelectorAll('#inventoryTable tbody input.row-select').forEach(cb => {
+        cb.checked = checked;
+    });
+}
+
+function handlePrintSelected() {
+    const checkboxes = Array.from(document.querySelectorAll('#inventoryTable tbody input.row-select:checked'));
+    if (!checkboxes.length) {
+        alert('Select items to print');
+        return;
+    }
+    const codes = checkboxes.map(cb => cb.closest('tr').dataset.barcode);
+    const items = loadItems().filter(it => codes.includes(it.barcode));
+    const nameField = loadFields().find(f => f.key === 'name');
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.write('<!DOCTYPE html><html><head><title>Print Barcodes</title>');
+    win.document.write('<style>body{font-family:Arial;} .code{margin:1rem;}</style>');
+    win.document.write('</head><body>');
+    items.forEach(it => {
+        win.document.write('<div class="code">');
+        win.document.write(`<svg class="barcode" data-code="${it.barcode}"></svg>`);
+        if (nameField) win.document.write(`<div>${it[nameField.key] || ''}</div>`);
+        win.document.write('</div>');
+    });
+    win.document.write('<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>');
+    win.document.write('<script>window.onload=function(){document.querySelectorAll("svg.barcode").forEach(function(s){JsBarcode(s,s.dataset.code,{displayValue:true});});};<\/script>');
+    win.document.write('</body></html>');
+    win.document.close();
+    win.focus();
+    win.print();
+}
+
 window.addEventListener('DOMContentLoaded', () => {
     renderEditFields();
     renderTableHeader();
@@ -397,6 +447,10 @@ window.addEventListener('DOMContentLoaded', () => {
     if (btn) btn.addEventListener('click', editFields);
     const invoiceBtn = document.getElementById('processInvoiceBtn');
     if (invoiceBtn) invoiceBtn.addEventListener('click', handleProcessInvoice);
+    const selectAllBox = document.getElementById('selectAllCheckbox');
+    if (selectAllBox) selectAllBox.addEventListener('change', handleSelectAll);
+    const printBtn = document.getElementById('printSelectedBtn');
+    if (printBtn) printBtn.addEventListener('click', handlePrintSelected);
     const initialBarcode = params.get('barcode');
     if (initialBarcode) {
         selectItemByBarcode(initialBarcode);

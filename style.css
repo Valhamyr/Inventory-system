@@ -122,3 +122,7 @@ nav {
 #add-item-section {
     flex-basis: 100%;
 }
+
+#printSelectedBtn {
+    margin-top: 0.5rem;
+}
