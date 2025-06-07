@@ -36,14 +36,21 @@ function editFields() {
         alert('Fields must include Barcode');
         return;
     }
-    const newFields = [];
-    newLabels.forEach((label, idx) => {
-        if (current[idx]) {
-            newFields.push({key: current[idx].key, label, multiLine: current[idx].multiLine});
-        } else {
-            const key = label.toLowerCase().replace(/\s+/g, '_');
-            newFields.push({key, label});
+    const labelMap = {};
+    current.forEach(f => {
+        labelMap[f.label.toLowerCase()] = f;
+    });
+    const newFields = newLabels.map((label, idx) => {
+        const lc = label.toLowerCase();
+        if (labelMap[lc]) {
+            const f = labelMap[lc];
+            return {key: f.key, label, multiLine: f.multiLine};
         }
+        if (current[idx]) {
+            return {key: current[idx].key, label, multiLine: current[idx].multiLine};
+        }
+        const key = lc.replace(/\s+/g, '_');
+        return {key, label};
     });
     if (newFields.length < current.length) {
         const removed = current.slice(newFields.length).map(f => f.key);
