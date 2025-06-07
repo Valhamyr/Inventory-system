@@ -78,18 +78,25 @@ function saveItems(items) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
 }
 
+let nextBarcodeCounter = null;
+
 function getNextBarcode() {
-    const items = loadItems();
-    let nextId = 1;
-    items.forEach(item => {
-        if (item.barcode && item.barcode.startsWith(`${inventoryType}-`)) {
-            const num = parseInt(item.barcode.slice(inventoryType.length + 1), 10);
-            if (!isNaN(num) && num >= nextId) {
-                nextId = num + 1;
+    if (nextBarcodeCounter === null) {
+        const items = loadItems();
+        let maxId = 0;
+        items.forEach(item => {
+            if (item.barcode && item.barcode.startsWith(`${inventoryType}-`)) {
+                const num = parseInt(item.barcode.slice(inventoryType.length + 1), 10);
+                if (!isNaN(num) && num > maxId) {
+                    maxId = num;
+                }
             }
-        }
-    });
-    return `${inventoryType}-${nextId}`;
+        });
+        nextBarcodeCounter = maxId + 1;
+    } else {
+        nextBarcodeCounter++;
+    }
+    return `${inventoryType}-${nextBarcodeCounter}`;
 }
 
 function renderEditFields() {
@@ -267,10 +274,14 @@ function handleAddItem(e) {
 function handleTableClick(e) {
     if (e.target.closest('input.row-select')) return;
     const delBarcode = e.target.dataset.delete;
-    if (delBarcode) {
+    if (e.target.hasAttribute('data-delete')) {
         let items = loadItems().filter(i => i.barcode !== delBarcode);
         saveItems(items);
         renderItems();
+        if (selectedBarcode === delBarcode) {
+            selectedBarcode = null;
+            showItemDetails(null);
+        }
     } else {
         const row = e.target.closest('tr');
         if (row && row.dataset.barcode) {
