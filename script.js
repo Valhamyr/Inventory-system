@@ -341,9 +341,7 @@ function parseInvoiceCSV(text) {
         headers.forEach((key, idx) => {
             item[key] = cols[idx] || '';
         });
-        if (!item['barcode']) {
-            item['barcode'] = getNextBarcode();
-        }
+        item['barcode'] = getNextBarcode();
         items.push(item);
     }
     saveItems(items);
