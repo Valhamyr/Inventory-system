@@ -1,6 +1,7 @@
 // Parse a CSV file and add the resulting items to the inventory.
 // The first row must contain headers that match the inventory field keys
-// (e.g. "name", "barcode", "amount").
+// (e.g. "name", "barcode", "amount"). Any barcode values in the CSV are ignored
+// and new barcodes are generated during import.
 export async function handleFileUpload(file) {
   const items = await parseCSVFile(file);
   if (items && items.length) {
@@ -60,10 +61,8 @@ export function addItemsToInventory(items) {
   const fields = typeof loadFields === 'function' ? loadFields() : [];
   const barcodeField = fields.find(f => f.key === 'barcode');
   items.forEach(item => {
-    if (barcodeField && !item[barcodeField.key]) {
-      if (typeof getNextBarcode === 'function') {
-        item[barcodeField.key] = getNextBarcode();
-      }
+    if (barcodeField && typeof getNextBarcode === 'function') {
+      item[barcodeField.key] = getNextBarcode();
     }
     current.push(item);
   });
