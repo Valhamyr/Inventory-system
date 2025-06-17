@@ -6,11 +6,28 @@ const db = require('./db');
 const app = express();
 app.use(express.json({limit: '2mb'}));
 
-// Initialize database tables
-db.init().catch(err => {
-  console.error('DB init failed', err);
-  process.exit(1);
+app.post('/api/login', async (req, res) => {
+  const { host, user, password, database } = req.body || {};
+  if (!host || !user || !password) {
+    return res.status(400).json({ error: 'Missing credentials' });
+  }
+  try {
+    await db.setConfig({ server: host, user, password, database });
+    await db.init();
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Login failed', err);
+    res.status(400).json({ error: 'DB connection failed' });
+  }
 });
+
+// Initialize database tables if environment credentials are provided
+if (db.isConfigured()) {
+  db.init().catch(err => {
+    console.error('DB init failed', err);
+    process.exit(1);
+  });
+}
 
 app.post('/api/parse-invoice', async (req, res) => {
   const text = req.body && req.body.text;
@@ -64,7 +81,7 @@ app.post('/api/parse-invoice', async (req, res) => {
 // Inventory Types
 app.get('/api/types', async (req, res) => {
   try {
-    const pool = await db.poolPromise;
+    const pool = await db.getPool();
     const result = await pool.request().query('SELECT name FROM inventory_types ORDER BY name');
     res.json(result.recordset.map(r => r.name));
   } catch (err) {
@@ -77,7 +94,7 @@ app.post('/api/types', async (req, res) => {
   const name = req.body && req.body.name;
   if (!name) return res.status(400).json({ error: 'Missing name' });
   try {
-    const pool = await db.poolPromise;
+    const pool = await db.getPool();
     await pool.request().input('name', db.sql.NVarChar, name).query('INSERT INTO inventory_types(name) VALUES (@name)');
     res.json({ success: true });
   } catch (err) {
@@ -89,7 +106,7 @@ app.post('/api/types', async (req, res) => {
 app.delete('/api/types/:name', async (req, res) => {
   const name = req.params.name;
   try {
-    const pool = await db.poolPromise;
+    const pool = await db.getPool();
     await pool.request().input('name', db.sql.NVarChar, name).query('DELETE FROM inventory_types WHERE name=@name');
     res.json({ success: true });
   } catch (err) {
@@ -102,7 +119,7 @@ app.delete('/api/types/:name', async (req, res) => {
 app.get('/api/items/:type', async (req, res) => {
   const type = req.params.type;
   try {
-    const pool = await db.poolPromise;
+    const pool = await db.getPool();
     const result = await pool.request()
       .input('name', db.sql.NVarChar, type)
       .query(`SELECT it.* FROM inventory_items it JOIN inventory_types t ON it.type_id=t.id WHERE t.name=@name`);
@@ -118,7 +135,7 @@ app.post('/api/items/:type', async (req, res) => {
   const item = req.body;
   if (!item || !item.barcode) return res.status(400).json({ error: 'Missing item data' });
   try {
-    const pool = await db.poolPromise;
+    const pool = await db.getPool();
     const result = await pool.request()
       .input('name', db.sql.NVarChar, type)
       .query('SELECT id FROM inventory_types WHERE name=@name');
@@ -148,7 +165,7 @@ app.put('/api/items/:type/:barcode', async (req, res) => {
   const barcode = req.params.barcode;
   const item = req.body || {};
   try {
-    const pool = await db.poolPromise;
+    const pool = await db.getPool();
     const result = await pool.request()
       .input('name', db.sql.NVarChar, type)
       .query('SELECT id FROM inventory_types WHERE name=@name');
@@ -178,7 +195,7 @@ app.delete('/api/items/:type/:barcode', async (req, res) => {
   const type = req.params.type;
   const barcode = req.params.barcode;
   try {
-    const pool = await db.poolPromise;
+    const pool = await db.getPool();
     const result = await pool.request()
       .input('name', db.sql.NVarChar, type)
       .query('SELECT id FROM inventory_types WHERE name=@name');

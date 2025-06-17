@@ -107,6 +107,28 @@ function handleTypeListClick(e) {
     }
 }
 
+async function handleLogin(e) {
+    e.preventDefault();
+    const host = document.getElementById('dbHost').value.trim();
+    const user = document.getElementById('dbUser').value.trim();
+    const pass = document.getElementById('dbPass').value;
+    const database = document.getElementById('dbName').value.trim();
+    const msg = document.getElementById('loginMessage');
+    msg.textContent = '';
+    try {
+        const res = await fetch('/api/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({host, user, password: pass, database})
+        });
+        if (!res.ok) throw new Error();
+        msg.textContent = 'Connected to database';
+        renderTypes();
+    } catch {
+        msg.textContent = 'Failed to connect';
+    }
+}
+
 window.addEventListener('DOMContentLoaded', () => {
     renderTypes();
     document.getElementById('typeForm').addEventListener('submit', addType);
@@ -122,6 +144,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const searchForm = document.getElementById('searchForm');
     if (searchForm) {
         searchForm.addEventListener('submit', handleSearch);
+    }
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
     }
 });
 

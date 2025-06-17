@@ -10,6 +10,30 @@
 <div class="container">
     <h1>Inventory Types</h1>
 
+    <section id="login-section">
+        <h2>Connect to Database</h2>
+        <form id="loginForm">
+            <label>Server
+                <input type="text" id="dbHost" placeholder="e.g. localhost" required>
+                <small>Address of your SQL server</small>
+            </label>
+            <label>Database
+                <input type="text" id="dbName" placeholder="inventory">
+                <small>Name of the database</small>
+            </label>
+            <label>Username
+                <input type="text" id="dbUser" required>
+                <small>Your SQL login name</small>
+            </label>
+            <label>Password
+                <input type="password" id="dbPass" required>
+                <small>Password for the SQL user</small>
+            </label>
+            <button type="submit">Connect</button>
+        </form>
+        <p id="loginMessage"></p>
+    </section>
+
     <section id="search-item">
         <h2>Search Item</h2>
         <form id="searchForm">

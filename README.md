@@ -43,4 +43,4 @@ The repository includes `mock_inventory_fabrics.csv` as a sample file that you
 can use to test the import feature.
 
 ## Server Configuration
-Create a `.env` file based on `.env.example` and provide your database connection details. Start the server with `npm start` and the front-end will read and write data through the exposed API.
+Create a `.env` file based on `.env.example` and provide your database connection details. You can also supply the connection information from the home page using the **Connect to Database** form. Start the server with `npm start` and the front-end will read and write data through the exposed API.
