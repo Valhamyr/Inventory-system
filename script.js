@@ -1,6 +1,6 @@
 const params = new URLSearchParams(location.search);
 const inventoryType = params.get('type') || 'default';
-const API_BASE_URL = localStorage.getItem('apiBaseUrl') || '';
+let API_BASE_URL = localStorage.getItem('apiBaseUrl') || '';
 const STORAGE_KEY = `inventoryItems_${inventoryType}`;
 const FIELD_KEY = `inventoryFields_${inventoryType}`;
 const DEFAULT_FIELDS = [

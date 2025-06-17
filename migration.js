@@ -1,4 +1,4 @@
-const API_BASE_URL = localStorage.getItem('apiBaseUrl') || '';
+let API_BASE_URL = localStorage.getItem('apiBaseUrl') || '';
 
 export async function migrateLocalData() {
   const types = JSON.parse(localStorage.getItem('inventoryTypes') || '[]');
