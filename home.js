@@ -1,4 +1,4 @@
-const API_BASE_URL = localStorage.getItem('apiBaseUrl') || '';
+let API_BASE_URL = localStorage.getItem('apiBaseUrl') || '';
 
 async function loadTypes() {
     const res = await fetch(`${API_BASE_URL}/api/types`);
@@ -111,14 +111,25 @@ function handleTypeListClick(e) {
 
 async function handleLogin(e) {
     e.preventDefault();
-    const serverHost = document.getElementById('serverHost').value.trim();
-    const serverPort = document.getElementById('serverPort').value.trim();
+    const hostEl = document.getElementById('serverHost');
+    const portEl = document.getElementById('serverPort');
+    const userEl = document.getElementById('dbUser');
+    const passEl = document.getElementById('dbPass');
+    const dbEl = document.getElementById('dbName');
+    const msg = document.getElementById('loginMessage');
+
+    if (!hostEl || !portEl || !userEl || !passEl || !dbEl) {
+        console.error('Login form elements missing');
+        return;
+    }
+
+    const serverHost = hostEl.value.trim();
+    const serverPort = portEl.value.trim();
     API_BASE_URL = serverPort ? `http://${serverHost}:${serverPort}` : `http://${serverHost}`;
     localStorage.setItem('apiBaseUrl', API_BASE_URL);
-    const user = document.getElementById('dbUser').value.trim();
-    const pass = document.getElementById('dbPass').value;
-    const database = document.getElementById('dbName').value.trim();
-    const msg = document.getElementById('loginMessage');
+    const user = userEl.value.trim();
+    const pass = passEl.value;
+    const database = dbEl.value.trim();
     msg.textContent = '';
     try {
         const res = await fetch(`${API_BASE_URL}/api/login`, {
