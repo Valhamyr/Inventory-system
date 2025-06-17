@@ -1,14 +1,19 @@
-function loadTypes() {
-    const data = localStorage.getItem('inventoryTypes');
-    return data ? JSON.parse(data) : [];
+async function loadTypes() {
+    const res = await fetch('/api/types');
+    if (!res.ok) return [];
+    return await res.json();
 }
 
-function saveTypes(types) {
-    localStorage.setItem('inventoryTypes', JSON.stringify(types));
+async function saveType(name) {
+    await fetch('/api/types', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name})
+    });
 }
 
-function renderTypes() {
-    const types = loadTypes();
+async function renderTypes() {
+    const types = await loadTypes();
     const ul = document.getElementById('types');
     ul.innerHTML = '';
     types.forEach(t => {
@@ -27,31 +32,32 @@ function renderTypes() {
     renderTypeOptions();
 }
 
-function addType(e) {
+async function addType(e) {
     e.preventDefault();
     const input = document.getElementById('typeName');
     const name = input.value.trim();
     if (!name) return;
-    let types = loadTypes();
-    if (!types.includes(name)) {
-        types.push(name);
-        saveTypes(types);
-        renderTypes();
-    }
+    await saveType(name);
+    renderTypes();
     input.value = '';
 }
 
-function loadItemsForType(type) {
-    const data = localStorage.getItem(`inventoryItems_${type}`);
-    return data ? JSON.parse(data) : [];
+async function loadItemsForType(type) {
+    const res = await fetch(`/api/items/${encodeURIComponent(type)}`);
+    if (!res.ok) return [];
+    return await res.json();
 }
 
-function saveItemsForType(type, items) {
-    localStorage.setItem(`inventoryItems_${type}`, JSON.stringify(items));
+async function saveItemForType(type, item) {
+    await fetch(`/api/items/${encodeURIComponent(type)}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(item)
+    });
 }
 
-function getNextBarcode(type) {
-    const items = loadItemsForType(type);
+async function getNextBarcode(type) {
+    const items = await loadItemsForType(type);
     let nextId = 1;
     items.forEach(item => {
         if (item.barcode && item.barcode.startsWith(`${type}-`)) {
@@ -64,10 +70,10 @@ function getNextBarcode(type) {
     return `${type}-${nextId}`;
 }
 
-function renderTypeOptions() {
+async function renderTypeOptions() {
     const select = document.getElementById('genType');
     if (!select) return;
-    const types = loadTypes();
+    const types = await loadTypes();
     select.innerHTML = '';
     types.forEach(t => {
         const opt = document.createElement('option');
@@ -77,25 +83,20 @@ function renderTypeOptions() {
     });
 }
 
-function handleGenerateBarcode(e) {
+async function handleGenerateBarcode(e) {
     e.preventDefault();
     const type = document.getElementById('genType').value;
     const name = document.getElementById('genName').value.trim();
     if (!type || !name) return;
-    const items = loadItemsForType(type);
-    const barcode = getNextBarcode(type);
-    items.push({name, amount: 0, barcode, notes: ''});
-    saveItemsForType(type, items);
+    const barcode = await getNextBarcode(type);
+    await saveItemForType(type, {name, amount: 0, barcode, notes: ''});
     const svg = document.getElementById('generatedBarcode');
     JsBarcode(svg, barcode, {displayValue: true});
 }
 
-function deleteType(name) {
+async function deleteType(name) {
     if (!confirm(`Delete type "${name}" and all its data?`)) return;
-    let types = loadTypes().filter(t => t !== name);
-    saveTypes(types);
-    localStorage.removeItem(`inventoryItems_${name}`);
-    localStorage.removeItem(`inventoryFields_${name}`);
+    await fetch(`/api/types/${encodeURIComponent(name)}`, { method: 'DELETE' });
     renderTypes();
 }
 
@@ -124,14 +125,14 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-function handleSearch(e) {
+async function handleSearch(e) {
     e.preventDefault();
     const code = document.getElementById('searchInput').value.trim();
     const msg = document.getElementById('searchMessage');
     if (!code) return;
-    const types = loadTypes();
+    const types = await loadTypes();
     for (const t of types) {
-        const items = loadItemsForType(t);
+        const items = await loadItemsForType(t);
         if (items.find(it => it.barcode === code)) {
             location.href = `inventory.html?type=${encodeURIComponent(t)}&barcode=${encodeURIComponent(code)}`;
             return;

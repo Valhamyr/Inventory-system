@@ -10,7 +10,7 @@ This file outlines planned development milestones for the inventory tracker.
 
 ## Upcoming Features
 1. **Cloud-Based Storage**
-   - Move data persistence from browser `localStorage` to a cloud solution so inventory can be accessed across devices.
+   - *Completed*: inventory data is now saved to an SQL database via the Node server.
 2. **Storage Groups**
    - Support multiple inventories (e.g., fabrics vs. filament) so items can be organized into separate databases.
 3. **Automatic Barcode Generation**

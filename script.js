@@ -26,7 +26,7 @@ function saveFields(fields) {
     localStorage.setItem(FIELD_KEY, JSON.stringify(fields));
 }
 
-function editFields() {
+async function editFields() {
     const current = loadFields();
     const labels = current.map(f => f.label).join(',');
     const input = prompt('Comma-separated field names (must include Barcode)', labels);
@@ -54,18 +54,21 @@ function editFields() {
     });
     if (newFields.length < current.length) {
         const removed = current.slice(newFields.length).map(f => f.key);
-        let items = loadItems();
+        let items = await loadItems();
         items = items.map(it => {
             removed.forEach(k => delete it[k]);
             return it;
         });
-        saveItems(items);
+        for (const it of items) {
+            await updateItem(it.barcode, it);
+        }
     }
     saveFields(newFields);
     renderEditFields();
     renderTableHeader();
-    renderItems();
-    const currentItem = loadItems().find(i => i.barcode === selectedBarcode);
+    await renderItems();
+    const currentItems = await loadItems();
+    const currentItem = currentItems.find(i => i.barcode === selectedBarcode);
     showItemDetails(currentItem || null);
 }
 
@@ -76,20 +79,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-function loadItems() {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
+async function loadItems() {
+    const res = await fetch(`/api/items/${encodeURIComponent(inventoryType)}`);
+    if (!res.ok) return [];
+    return await res.json();
 }
 
-function saveItems(items) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+async function saveItem(item) {
+    await fetch(`/api/items/${encodeURIComponent(inventoryType)}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(item)
+    });
+}
+
+async function updateItem(barcode, item) {
+    await fetch(`/api/items/${encodeURIComponent(inventoryType)}/${encodeURIComponent(barcode)}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(item)
+    });
+}
+
+async function deleteItem(barcode) {
+    await fetch(`/api/items/${encodeURIComponent(inventoryType)}/${encodeURIComponent(barcode)}`, { method: 'DELETE' });
 }
 
 let nextBarcodeCounter = null;
 
-function getNextBarcode() {
+async function getNextBarcode() {
     if (nextBarcodeCounter === null) {
-        const items = loadItems();
+        const items = await loadItems();
         let maxId = 0;
         items.forEach(item => {
             if (item.barcode && item.barcode.startsWith(`${inventoryType}-`)) {
@@ -148,7 +168,7 @@ function showItemDetails(item) {
     });
 }
 
-function selectItemByBarcode(barcode) {
+async function selectItemByBarcode(barcode) {
     selectedBarcode = barcode;
     document.querySelectorAll('#inventoryTable tbody tr').forEach(tr => {
         if (tr.dataset.barcode === barcode) {
@@ -157,7 +177,8 @@ function selectItemByBarcode(barcode) {
             tr.classList.remove('selected');
         }
     });
-    const item = loadItems().find(i => i.barcode === barcode);
+    const items = await loadItems();
+    const item = items.find(i => i.barcode === barcode);
     if (item) showItemDetails(item);
     else showItemDetails(null);
 }
@@ -184,8 +205,8 @@ function renderTableHeader() {
     row.appendChild(actions);
 }
 
-function renderItems() {
-    const items = loadItems();
+async function renderItems() {
+    const items = await loadItems();
     const fields = loadFields();
     const tbody = document.querySelector('#inventoryTable tbody');
     tbody.innerHTML = '';
@@ -229,10 +250,10 @@ function renderItems() {
     }
 }
 
-function updateSelectedItem(e) {
+async function updateSelectedItem(e) {
     e.preventDefault();
     if (!selectedBarcode) return;
-    let items = loadItems();
+    const items = await loadItems();
     const item = items.find(i => i.barcode === selectedBarcode);
     if (!item) return;
     const fields = loadFields();
@@ -246,17 +267,16 @@ function updateSelectedItem(e) {
             item[f.key] = val;
         }
     });
-    saveItems(items);
-    renderItems();
+    await updateItem(item.barcode, item);
+    await renderItems();
     selectItemByBarcode(selectedBarcode);
 }
 
-function handleAddItem(e) {
+async function handleAddItem(e) {
     e.preventDefault();
     const name = document.getElementById('newItemName').value.trim();
     if (!name) return;
-    let items = loadItems();
-    const barcode = getNextBarcode();
+    const barcode = await getNextBarcode();
     const newItem = {};
     const fields = loadFields();
     fields.forEach(f => {
@@ -270,21 +290,19 @@ function handleAddItem(e) {
             newItem[f.key] = '';
         }
     });
-    items.push(newItem);
-    saveItems(items);
+    await saveItem(newItem);
     JsBarcode(document.getElementById('newItemBarcode'), barcode, {displayValue: true});
-    renderItems();
+    await renderItems();
     selectItemByBarcode(barcode);
     e.target.reset();
 }
 
-function handleTableClick(e) {
+async function handleTableClick(e) {
     if (e.target.closest('input.row-select')) return;
     const delBarcode = e.target.dataset.delete;
     if (e.target.hasAttribute('data-delete')) {
-        let items = loadItems().filter(i => i.barcode !== delBarcode);
-        saveItems(items);
-        renderItems();
+        await deleteItem(delBarcode);
+        await renderItems();
         if (selectedBarcode === delBarcode) {
             selectedBarcode = null;
             showItemDetails(null);
@@ -297,12 +315,13 @@ function handleTableClick(e) {
     }
 }
 
-function handleBarcodeInput(e) {
+async function handleBarcodeInput(e) {
     if (e.key === 'Enter') {
         e.preventDefault();
         const code = e.target.value.trim();
         if (code) {
-            const item = loadItems().find(i => i.barcode === code);
+            const items = await loadItems();
+            const item = items.find(i => i.barcode === code);
             if (item) {
                 selectItemByBarcode(code);
             } else {
@@ -316,10 +335,10 @@ function handleBarcodeInput(e) {
 
 async function processInvoiceFile(file) {
     const text = await file.text();
-    parseInvoiceCSV(text);
+    await parseInvoiceCSV(text);
 }
 
-function parseInvoiceCSV(text) {
+async function parseInvoiceCSV(text) {
     const lines = text.split(/\r?\n/).filter(l => l.trim());
     if (lines.length < 2) return;
     const rawHeaders = lines[0].split(',').map(h => h.trim());
@@ -334,17 +353,19 @@ function parseInvoiceCSV(text) {
         const n = normalize(h);
         return map[n] || synonyms[n] || n;
     });
-    let items = loadItems();
+    let items = await loadItems();
     for (let i = 1; i < lines.length; i++) {
         const cols = lines[i].split(',').map(c => c.trim());
         const item = {};
         headers.forEach((key, idx) => {
             item[key] = cols[idx] || '';
         });
-        item['barcode'] = getNextBarcode();
+        item['barcode'] = await getNextBarcode();
         items.push(item);
     }
-    saveItems(items);
+    for (const it of items) {
+        await saveItem(it);
+    }
 }
 
 function normalize(str) {
@@ -362,7 +383,7 @@ async function handleProcessInvoice() {
     try {
         await processInvoiceFile(input.files[0]);
         if (status) status.textContent = 'Invoice processed.';
-        renderItems();
+        await renderItems();
     } catch (err) {
         console.error(err);
         if (status) status.textContent = 'Failed to process invoice.';
@@ -376,14 +397,15 @@ function handleSelectAll(e) {
     });
 }
 
-function handlePrintSelected() {
+async function handlePrintSelected() {
     const checkboxes = Array.from(document.querySelectorAll('#inventoryTable tbody input.row-select:checked'));
     if (!checkboxes.length) {
         alert('Select items to print');
         return;
     }
     const codes = checkboxes.map(cb => cb.closest('tr').dataset.barcode);
-    const items = loadItems().filter(it => codes.includes(it.barcode));
+    const allItems = await loadItems();
+    const items = allItems.filter(it => codes.includes(it.barcode));
     const nameField = loadFields().find(f => f.key === 'name');
     const win = window.open('', '_blank');
     if (!win) return;
