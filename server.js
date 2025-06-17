@@ -1,4 +1,6 @@
 require('dotenv').config();
+const fs = require('fs');
+const https = require('https');
 const express = require('express');
 const fetch = require('node-fetch');
 const cors = require('cors');
@@ -6,7 +8,7 @@ const db = require('./db');
 
 const app = express();
 app.use(cors());
-app.use(express.json({limit: '2mb'}));
+app.use(express.json({ limit: '2mb' }));
 
 app.post('/api/login', async (req, res) => {
   const { user, password, database } = req.body || {};
@@ -80,141 +82,13 @@ app.post('/api/parse-invoice', async (req, res) => {
   }
 });
 
-// Inventory Types
-app.get('/api/types', async (req, res) => {
-  try {
-    const pool = await db.getPool();
-    const result = await pool.request().query('SELECT name FROM inventory_types ORDER BY name');
-    res.json(result.recordset.map(r => r.name));
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'DB error' });
-  }
-});
+// HTTPS setup
+const sslOptions = {
+  key: fs.readFileSync('./ssl/key.pem'),
+  cert: fs.readFileSync('./ssl/cert.pem')
+};
 
-app.post('/api/types', async (req, res) => {
-  const name = req.body && req.body.name;
-  if (!name) return res.status(400).json({ error: 'Missing name' });
-  try {
-    const pool = await db.getPool();
-    await pool.request().input('name', db.sql.NVarChar, name).query('INSERT INTO inventory_types(name) VALUES (@name)');
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'DB error' });
-  }
-});
-
-app.delete('/api/types/:name', async (req, res) => {
-  const name = req.params.name;
-  try {
-    const pool = await db.getPool();
-    await pool.request().input('name', db.sql.NVarChar, name).query('DELETE FROM inventory_types WHERE name=@name');
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'DB error' });
-  }
-});
-
-// Inventory Items
-app.get('/api/items/:type', async (req, res) => {
-  const type = req.params.type;
-  try {
-    const pool = await db.getPool();
-    const result = await pool.request()
-      .input('name', db.sql.NVarChar, type)
-      .query(`SELECT it.* FROM inventory_items it JOIN inventory_types t ON it.type_id=t.id WHERE t.name=@name`);
-    res.json(result.recordset);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'DB error' });
-  }
-});
-
-app.post('/api/items/:type', async (req, res) => {
-  const type = req.params.type;
-  const item = req.body;
-  if (!item || !item.barcode) return res.status(400).json({ error: 'Missing item data' });
-  try {
-    const pool = await db.getPool();
-    const result = await pool.request()
-      .input('name', db.sql.NVarChar, type)
-      .query('SELECT id FROM inventory_types WHERE name=@name');
-    if (!result.recordset.length) return res.status(400).json({ error: 'Invalid type' });
-    const typeId = result.recordset[0].id;
-    const request = pool.request()
-      .input('type_id', db.sql.Int, typeId)
-      .input('barcode', db.sql.NVarChar, item.barcode)
-      .input('name', db.sql.NVarChar, item.name || '')
-      .input('amount', db.sql.Int, item.amount || 0)
-      .input('material', db.sql.NVarChar, item.material || '')
-      .input('color', db.sql.NVarChar, item.color || '')
-      .input('store_url', db.sql.NVarChar, item.store_url || '')
-      .input('price', db.sql.Float, item.price || 0)
-      .input('notes', db.sql.NVarChar, item.notes || '');
-    await request.query(`INSERT INTO inventory_items(type_id, barcode, name, amount, material, color, store_url, price, notes)
-                         VALUES (@type_id, @barcode, @name, @amount, @material, @color, @store_url, @price, @notes)`);
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'DB error' });
-  }
-});
-
-app.put('/api/items/:type/:barcode', async (req, res) => {
-  const type = req.params.type;
-  const barcode = req.params.barcode;
-  const item = req.body || {};
-  try {
-    const pool = await db.getPool();
-    const result = await pool.request()
-      .input('name', db.sql.NVarChar, type)
-      .query('SELECT id FROM inventory_types WHERE name=@name');
-    if (!result.recordset.length) return res.status(400).json({ error: 'Invalid type' });
-    const typeId = result.recordset[0].id;
-    const request = pool.request()
-      .input('type_id', db.sql.Int, typeId)
-      .input('barcode', db.sql.NVarChar, barcode)
-      .input('name', db.sql.NVarChar, item.name || '')
-      .input('amount', db.sql.Int, item.amount || 0)
-      .input('material', db.sql.NVarChar, item.material || '')
-      .input('color', db.sql.NVarChar, item.color || '')
-      .input('store_url', db.sql.NVarChar, item.store_url || '')
-      .input('price', db.sql.Float, item.price || 0)
-      .input('notes', db.sql.NVarChar, item.notes || '');
-    await request.query(`UPDATE inventory_items
-      SET name=@name, amount=@amount, material=@material, color=@color, store_url=@store_url, price=@price, notes=@notes
-      WHERE barcode=@barcode AND type_id=@type_id`);
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'DB error' });
-  }
-});
-
-app.delete('/api/items/:type/:barcode', async (req, res) => {
-  const type = req.params.type;
-  const barcode = req.params.barcode;
-  try {
-    const pool = await db.getPool();
-    const result = await pool.request()
-      .input('name', db.sql.NVarChar, type)
-      .query('SELECT id FROM inventory_types WHERE name=@name');
-    if (!result.recordset.length) return res.status(400).json({ error: 'Invalid type' });
-    const typeId = result.recordset[0].id;
-    await pool.request()
-      .input('barcode', db.sql.NVarChar, barcode)
-      .input('type_id', db.sql.Int, typeId)
-      .query('DELETE FROM inventory_items WHERE barcode=@barcode AND type_id=@type_id');
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'DB error' });
-  }
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+// Start HTTPS server
+https.createServer(sslOptions, app).listen(443, () => {
+  console.log('✅ HTTPS server running at https://51.75.24.213');
 });
