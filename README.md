@@ -1,13 +1,13 @@
 # Inventory Tracker
 
-A lightweight web-based inventory tracking application that works with Bluetooth barcode scanners. Data can now be persisted to an SQL database via a small Node server. Barcodes are rendered using [JsBarcode](https://github.com/lindell/JsBarcode).
+A lightweight web-based inventory tracking application that works with Bluetooth barcode scanners. Data can now be persisted to a PostgreSQL database via a small Node server. Barcodes are rendered using [JsBarcode](https://github.com/lindell/JsBarcode).
 
 ## Features
 - Manage multiple inventory types
 - Delete inventory types from the home page
 - Add, update, and remove inventory items
 - Scan barcodes with a Bluetooth scanner or type them manually
-- Data can be stored in an SQL database via the Node server
+- Data can be stored in a PostgreSQL database via the Node server
 - Barcodes for each item are displayed in the table
 - Generate new item barcodes from the home page
 - Responsive layout for desktop and mobile
@@ -45,4 +45,4 @@ can use to test the import feature.
 ## Server Configuration
 Create a `.env` file based on `.env.example` and provide your database connection details. You can also supply the connection information from the home page using the **Connect to Database** form. Start the server with `npm start` and the front-end will read and write data through the exposed API.
 
-The configuration accepts an optional `DB_PORT` (default `1433`). Include this value in your `.env` file or the login form if your SQL server listens on a non-standard port.
+The configuration accepts an optional `DB_PORT` (default `5432`). Include this value in your `.env` file or the login form if your PostgreSQL server listens on a non-standard port.
