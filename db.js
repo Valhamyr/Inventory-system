@@ -27,7 +27,7 @@ if (process.env.DB_USER && process.env.DB_PASS) {
   });
 }
 
-async function getPool() {
+function getPool() {
   if (!pool) throw new Error('Database not configured');
   return pool;
 }
