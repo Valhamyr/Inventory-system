@@ -1,11 +1,13 @@
+const API_BASE_URL = localStorage.getItem('apiBaseUrl') || '';
+
 async function loadTypes() {
-    const res = await fetch('/api/types');
+    const res = await fetch(`${API_BASE_URL}/api/types`);
     if (!res.ok) return [];
     return await res.json();
 }
 
 async function saveType(name) {
-    await fetch('/api/types', {
+    await fetch(`${API_BASE_URL}/api/types`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({name})
@@ -43,13 +45,13 @@ async function addType(e) {
 }
 
 async function loadItemsForType(type) {
-    const res = await fetch(`/api/items/${encodeURIComponent(type)}`);
+    const res = await fetch(`${API_BASE_URL}/api/items/${encodeURIComponent(type)}`);
     if (!res.ok) return [];
     return await res.json();
 }
 
 async function saveItemForType(type, item) {
-    await fetch(`/api/items/${encodeURIComponent(type)}`, {
+    await fetch(`${API_BASE_URL}/api/items/${encodeURIComponent(type)}`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(item)
@@ -96,7 +98,7 @@ async function handleGenerateBarcode(e) {
 
 async function deleteType(name) {
     if (!confirm(`Delete type "${name}" and all its data?`)) return;
-    await fetch(`/api/types/${encodeURIComponent(name)}`, { method: 'DELETE' });
+    await fetch(`${API_BASE_URL}/api/types/${encodeURIComponent(name)}`, { method: 'DELETE' });
     renderTypes();
 }
 
@@ -109,18 +111,20 @@ function handleTypeListClick(e) {
 
 async function handleLogin(e) {
     e.preventDefault();
-    const host = document.getElementById('dbHost').value.trim();
-    const portValue = document.getElementById('dbPort').value.trim();
+    const serverHost = document.getElementById('serverHost').value.trim();
+    const serverPort = document.getElementById('serverPort').value.trim();
+    API_BASE_URL = serverPort ? `http://${serverHost}:${serverPort}` : `http://${serverHost}`;
+    localStorage.setItem('apiBaseUrl', API_BASE_URL);
     const user = document.getElementById('dbUser').value.trim();
     const pass = document.getElementById('dbPass').value;
     const database = document.getElementById('dbName').value.trim();
     const msg = document.getElementById('loginMessage');
     msg.textContent = '';
     try {
-        const res = await fetch('/api/login', {
+        const res = await fetch(`${API_BASE_URL}/api/login`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({host, user, password: pass, database, port: portValue ? Number(portValue) : undefined})
+            body: JSON.stringify({user, password: pass, database})
         });
         if (!res.ok) throw new Error();
         msg.textContent = 'Connected to database';
@@ -131,6 +135,11 @@ async function handleLogin(e) {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+    const urlMatch = API_BASE_URL.match(/^https?:\/\/([^:]+)(?::(\d+))?/);
+    if (urlMatch) {
+        document.getElementById('serverHost').value = urlMatch[1];
+        if (urlMatch[2]) document.getElementById('serverPort').value = urlMatch[2];
+    }
     renderTypes();
     document.getElementById('typeForm').addEventListener('submit', addType);
     const genForm = document.getElementById('generateForm');
