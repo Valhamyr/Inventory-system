@@ -1,13 +1,13 @@
 # Inventory Tracker
 
-A lightweight web-based inventory tracking application that works with Bluetooth barcode scanners and stores data in your browser's localStorage. Barcodes are rendered using [JsBarcode](https://github.com/lindell/JsBarcode).
+A lightweight web-based inventory tracking application that works with Bluetooth barcode scanners. Data can now be persisted to an SQL database via a small Node server. Barcodes are rendered using [JsBarcode](https://github.com/lindell/JsBarcode).
 
 ## Features
 - Manage multiple inventory types
 - Delete inventory types from the home page
 - Add, update, and remove inventory items
 - Scan barcodes with a Bluetooth scanner or type them manually
-- Data is stored locally in your browser (no server required)
+- Data can be stored in an SQL database via the Node server
 - Barcodes for each item are displayed in the table
 - Generate new item barcodes from the home page
 - Responsive layout for desktop and mobile
@@ -22,6 +22,7 @@ A lightweight web-based inventory tracking application that works with Bluetooth
 5. On the inventory page scan a barcode into the **Scan Barcode** field or type it manually and press **Enter**.
 6. Fill in the item details and submit the form to add or update the item.
 7. Inventory items appear in the table where you can edit or delete them.
+8. To persist data, start the Node server with your `.env` configuration and the pages will communicate with it for storage.
 
 ## Deployment
 This project can be hosted on GitHub Pages. In your repository settings, enable **GitHub Pages** for the `main` branch (or the branch containing this code) and select the root directory.
@@ -40,3 +41,6 @@ row.
 
 The repository includes `mock_inventory_fabrics.csv` as a sample file that you
 can use to test the import feature.
+
+## Server Configuration
+Create a `.env` file based on `.env.example` and provide your database connection details. Start the server with `npm start` and the front-end will read and write data through the exposed API.
