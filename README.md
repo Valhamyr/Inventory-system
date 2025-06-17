@@ -44,3 +44,5 @@ can use to test the import feature.
 
 ## Server Configuration
 Create a `.env` file based on `.env.example` and provide your database connection details. You can also supply the connection information from the home page using the **Connect to Database** form. Start the server with `npm start` and the front-end will read and write data through the exposed API.
+
+The configuration accepts an optional `DB_PORT` (default `1433`). Include this value in your `.env` file or the login form if your SQL server listens on a non-standard port.
