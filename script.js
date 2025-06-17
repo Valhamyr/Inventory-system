@@ -1,6 +1,6 @@
 const params = new URLSearchParams(location.search);
 const inventoryType = params.get('type') || 'default';
-const API_BASE_URL = localStorage.getItem('apiBaseUrl') || '';
+let apiBaseUrl = localStorage.getItem('apiBaseUrl') || '';
 const STORAGE_KEY = `inventoryItems_${inventoryType}`;
 const FIELD_KEY = `inventoryFields_${inventoryType}`;
 const DEFAULT_FIELDS = [
@@ -81,13 +81,13 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function loadItems() {
-    const res = await fetch(`${API_BASE_URL}/api/items/${encodeURIComponent(inventoryType)}`);
+    const res = await fetch(`${apiBaseUrl}/api/items/${encodeURIComponent(inventoryType)}`);
     if (!res.ok) return [];
     return await res.json();
 }
 
 async function saveItem(item) {
-    await fetch(`${API_BASE_URL}/api/items/${encodeURIComponent(inventoryType)}`, {
+    await fetch(`${apiBaseUrl}/api/items/${encodeURIComponent(inventoryType)}`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(item)
@@ -95,7 +95,7 @@ async function saveItem(item) {
 }
 
 async function updateItem(barcode, item) {
-    await fetch(`${API_BASE_URL}/api/items/${encodeURIComponent(inventoryType)}/${encodeURIComponent(barcode)}`, {
+    await fetch(`${apiBaseUrl}/api/items/${encodeURIComponent(inventoryType)}/${encodeURIComponent(barcode)}`, {
         method: 'PUT',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(item)
@@ -103,7 +103,7 @@ async function updateItem(barcode, item) {
 }
 
 async function deleteItem(barcode) {
-    await fetch(`${API_BASE_URL}/api/items/${encodeURIComponent(inventoryType)}/${encodeURIComponent(barcode)}`, { method: 'DELETE' });
+    await fetch(`${apiBaseUrl}/api/items/${encodeURIComponent(inventoryType)}/${encodeURIComponent(barcode)}`, { method: 'DELETE' });
 }
 
 let nextBarcodeCounter = null;
