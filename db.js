@@ -1,29 +1,48 @@
 const sql = require('mssql');
 
-const config = {
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  server: process.env.DB_HOST,
-  database: process.env.DB_NAME || 'inventory',
-  options: {
-    encrypt: true,
-    trustServerCertificate: true
-  }
-};
+let poolPromise = null;
+let currentConfig = null;
 
-const poolPromise = new sql.ConnectionPool(config)
-  .connect()
-  .then(pool => {
-    console.log('Connected to DB');
-    return pool;
-  })
-  .catch(err => {
-    console.error('DB Connection Failed', err);
-    throw err;
+function setConfig(cfg) {
+  currentConfig = {
+    user: cfg.user,
+    password: cfg.password,
+    server: cfg.server,
+    database: cfg.database || 'inventory',
+    options: {
+      encrypt: true,
+      trustServerCertificate: true
+    }
+  };
+  poolPromise = new sql.ConnectionPool(currentConfig)
+    .connect()
+    .then(pool => {
+      console.log('Connected to DB');
+      return pool;
+    })
+    .catch(err => {
+      console.error('DB Connection Failed', err);
+      throw err;
+    });
+  return poolPromise;
+}
+
+if (process.env.DB_USER && process.env.DB_PASS && process.env.DB_HOST) {
+  setConfig({
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    server: process.env.DB_HOST,
+    database: process.env.DB_NAME
   });
+}
+
+async function getPool() {
+  if (!poolPromise) throw new Error('Database not configured');
+  return poolPromise;
+}
 
 async function init() {
-  const pool = await poolPromise;
+  const pool = await getPool();
   await pool.request().query(`
     IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='inventory_types' AND xtype='U')
     CREATE TABLE inventory_types (
@@ -46,4 +65,8 @@ async function init() {
   `);
 }
 
-module.exports = { sql, poolPromise, init };
+function isConfigured() {
+  return !!poolPromise;
+}
+
+module.exports = { sql, setConfig, getPool, init, isConfigured };
