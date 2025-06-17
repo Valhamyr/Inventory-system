@@ -8,6 +8,7 @@ function setConfig(cfg) {
     user: cfg.user,
     password: cfg.password,
     server: cfg.server,
+    port: cfg.port,
     database: cfg.database || 'inventory',
     options: {
       encrypt: true,
@@ -32,7 +33,8 @@ if (process.env.DB_USER && process.env.DB_PASS && process.env.DB_HOST) {
     user: process.env.DB_USER,
     password: process.env.DB_PASS,
     server: process.env.DB_HOST,
-    database: process.env.DB_NAME
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : undefined
   });
 }
 

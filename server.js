@@ -7,12 +7,12 @@ const app = express();
 app.use(express.json({limit: '2mb'}));
 
 app.post('/api/login', async (req, res) => {
-  const { host, user, password, database } = req.body || {};
+  const { host, user, password, database, port } = req.body || {};
   if (!host || !user || !password) {
     return res.status(400).json({ error: 'Missing credentials' });
   }
   try {
-    await db.setConfig({ server: host, user, password, database });
+    await db.setConfig({ server: host, user, password, database, port });
     await db.init();
     res.json({ success: true });
   } catch (err) {

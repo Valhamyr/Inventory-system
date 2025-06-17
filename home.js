@@ -110,6 +110,7 @@ function handleTypeListClick(e) {
 async function handleLogin(e) {
     e.preventDefault();
     const host = document.getElementById('dbHost').value.trim();
+    const portValue = document.getElementById('dbPort').value.trim();
     const user = document.getElementById('dbUser').value.trim();
     const pass = document.getElementById('dbPass').value;
     const database = document.getElementById('dbName').value.trim();
@@ -119,7 +120,7 @@ async function handleLogin(e) {
         const res = await fetch('/api/login', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({host, user, password: pass, database})
+            body: JSON.stringify({host, user, password: pass, database, port: portValue ? Number(portValue) : undefined})
         });
         if (!res.ok) throw new Error();
         msg.textContent = 'Connected to database';
