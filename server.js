@@ -84,8 +84,8 @@ app.post('/api/parse-invoice', async (req, res) => {
 
 // HTTPS setup
 const sslOptions = {
-  key: fs.readFileSync('./ssl/key.pem'),
-  cert: fs.readFileSync('./ssl/cert.pem')
+  key: fs.readFileSync('~/ssl/key.pem'),
+  cert: fs.readFileSync('~/ssl/cert.pem')
 };
 
 // Start HTTPS server
