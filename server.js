@@ -1,18 +1,20 @@
 require('dotenv').config();
 const express = require('express');
 const fetch = require('node-fetch');
+const cors = require('cors');
 const db = require('./db');
 
 const app = express();
+app.use(cors());
 app.use(express.json({limit: '2mb'}));
 
 app.post('/api/login', async (req, res) => {
-  const { host, user, password, database, port } = req.body || {};
-  if (!host || !user || !password) {
+  const { user, password, database } = req.body || {};
+  if (!user || !password) {
     return res.status(400).json({ error: 'Missing credentials' });
   }
   try {
-    await db.setConfig({ server: host, user, password, database, port });
+    await db.setConfig({ server: 'localhost', port: 5432, user, password, database });
     await db.init();
     res.json({ success: true });
   } catch (err) {

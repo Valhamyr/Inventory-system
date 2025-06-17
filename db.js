@@ -28,13 +28,13 @@ function setConfig(cfg) {
   return poolPromise;
 }
 
-if (process.env.DB_USER && process.env.DB_PASS && process.env.DB_HOST) {
+if (process.env.DB_USER && process.env.DB_PASS) {
   setConfig({
     user: process.env.DB_USER,
     password: process.env.DB_PASS,
-    server: process.env.DB_HOST,
+    server: 'localhost',
     database: process.env.DB_NAME,
-    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : undefined
+    port: 5432
   });
 }
 
