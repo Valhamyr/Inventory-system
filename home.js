@@ -124,7 +124,6 @@ async function handleLogin(e) {
     }
 
     const serverHost = hostEl.value.trim();
-    const serverPort = portEl.value.trim();
     apiBaseUrl = serverPort ? `http://${serverHost}:${serverPort}` : `http://${serverHost}`;
     localStorage.setItem('apiBaseUrl', apiBaseUrl);
     const user = userEl.value.trim();
